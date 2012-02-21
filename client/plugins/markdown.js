@@ -2,7 +2,7 @@
 
   window.plugins.markdown = {
     emit: function(div, item) {
-      return div.append("" + (wiki.resolveLinks((new Markdown.Converter()).makeHtml(item.text))));
+      return div.append("<div class='markdown'>    " + (wiki.resolveLinks((new Markdown.Converter()).makeHtml(item.text))) + "</div>");
     },
     bind: function(div, item) {
       return div.dblclick(function() {
