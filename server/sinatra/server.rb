@@ -23,6 +23,8 @@ class Controller < Sinatra::Base
   set :haml, :format => :html5
   set :versions, `git log -10 --oneline` || "no git log"
   enable :sessions
+  enable :logging, :dump_errors, :raise_errors
+  set :show_exceptions, true if development?
 
   class << self # overridden in test
     def data_root
