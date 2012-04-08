@@ -42,9 +42,9 @@ describe "Page" do
     describe "put" do
       context "when page doesn't exist yet" do
         it "creates new page" do
-          File.exist?(File.join(@test_data_dir, 'foo')).should be_false
+          File.should_not exist(File.join(@test_data_dir, 'foo'))
           @page.put('foo', @page_data)
-          File.exist?(File.join(@test_data_dir, 'foo')).should be_true
+          File.should exist(File.join(@test_data_dir, 'foo'))
         end
 
         it "returns the page" do
