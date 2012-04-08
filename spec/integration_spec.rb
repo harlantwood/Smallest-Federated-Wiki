@@ -14,10 +14,10 @@ describe "loading a page" do
   end
 
   it "should copy welcome-visitors from the default-data to data" do
-    File.exist?(File.join(TestDirs::TEST_DATA_DIR, "pages/welcome-visitors")).should == false
+    File.should_not exist(File.join(TestDirs::TEST_DATA_DIR, "pages/welcome-visitors"))
     visit("/")
     body.should include("Welcome Visitors")
-    File.exist?(File.join(TestDirs::TEST_DATA_DIR, "pages/welcome-visitors")).should == true
+    File.should exist(File.join(TestDirs::TEST_DATA_DIR, "pages/welcome-visitors"))
   end
 
   it "should load multiple pages at once" do

@@ -138,7 +138,7 @@ describe "PUT /non-existent-test-page" do
     action = {'type' => 'create', 'id' =>  "123foobar", 'item' => {'title' => 'non-existent-test-page'}}
     put "/page/non-existent-test-page/action", :action => action.to_json
     last_response.status.should == 200
-    File.exist?(@non_existent_page).should == true
+    File.should exist(@non_existent_page)
   end
 end
 
@@ -155,13 +155,13 @@ end
 describe "PUT /foo twice" do
   it "should return a 409 when recreating existing page" do
     page_file = "#{TestDirs::TEST_DATA_DIR}/pages/foo"
-    File.exist?(page_file).should == false
+    File.should_not exist(page_file)
 
     action = {'type' => 'create', 'id' =>  "123foobar", 'item' => {'title' => 'foo'}}
     put "/page/foo/action", :action => action.to_json
 
     last_response.status.should == 200
-    File.exist?(page_file).should == true
+    File.should exist(page_file)
     page_file_contents = File.read(page_file)
 
     action = {'type' => 'create', 'id' =>  "123foobar", 'item' => {'title' => 'spam'}}

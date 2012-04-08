@@ -16,8 +16,9 @@ describe "Favicon" do
 	describe "create" do
 		it "creates a favicon.png image" do
 			favicon_path = File.join(@test_data_dir, 'favicon-test.png')
+			File.should_not exist(favicon_path)
 			Favicon.create favicon_path
-			File.exist?(favicon_path).should be_true
+			File.should exist(favicon_path)
 			file = PNG.load_file(favicon_path)
 			file.should be_a(PNG::Canvas)
 			file.width.should == 32
