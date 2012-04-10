@@ -39,33 +39,47 @@ describe "Page" do
       @page_data = {'foo' => 'bar'}
     end
 
+    def page_path(name)
+      File.join(@test_data_dir, name)
+    end
+
     describe "put" do
+      def simple_get(name)
+        JSON.parse(File.read(page_path(name)))
+      end
+
       context "when page doesn't exist yet" do
-        it "creates new page" do
-          File.should_not exist(File.join(@test_data_dir, 'foo'))
+        it "creates a new page with the correct data" do
+          File.should_not exist(page_path('foo'))
           @page.put('foo', @page_data)
-          File.should exist(File.join(@test_data_dir, 'foo'))
+          File.should exist(page_path('foo'))
+          simple_get('foo').should == @page_data
         end
 
-        it "returns the page" do
+        it "returns the page data" do
           @page.put('foo', @page_data).should == @page_data
         end
       end
 
       context "when page already exists" do
         it "updates the page" do
-          @page.put('foo', @page_data).should == @page_data
+          @page.put('foo', @page_data)
           new_data = {'buzz' => 'fuzz'}
           @page.put('foo', new_data)
-          @page.get('foo').should == new_data
+          simple_get('foo').should == new_data
         end
       end
     end
 
     describe "get" do
+
+      def simple_put(name, page)
+        File.open(page_path(name), 'w'){|file| file.write(page.to_json)}
+      end
+
       context "when page exists" do
         it "returns the page" do
-          @page.put('foo', @page_data).should == @page_data
+          simple_put 'foo', @page_data
           @page.get('foo').should == @page_data
         end
       end
