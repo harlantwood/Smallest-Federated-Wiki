@@ -37,8 +37,8 @@ class Controller < Sinatra::Base
     page
   end
 
-  def farm_status
-    data = farm? ? File.join(self.class.data_root, "farm", request.host) : self.class.data_root
+  def farm_status(site=request.host)
+    data = farm? ? File.join(self.class.data_root, "farm", site) : self.class.data_root
     status = File.join(data, "status")
     FileUtils.mkdir_p status
     status
@@ -320,7 +320,7 @@ class Controller < Sinatra::Base
   get %r{^/remote/([a-zA-Z0-9:\.-]+)/([a-z0-9-]+)\.json$} do |site, name|
     content_type 'application/json'
     host = site.split(':').first
-    if Dir.exists? File.join(self.class.data_root, "farm", host)
+    if farm? && Dir.exists?(File.join(self.class.data_root, "farm", host))
       JSON.pretty_generate(farm_page(host).get(name))
     else
       RestClient.get "#{site}/#{name}.json" do |response, request, result, &block|
@@ -338,7 +338,14 @@ class Controller < Sinatra::Base
 
   get %r{^/remote/([a-zA-Z0-9:\.-]+)/favicon.png$} do |site|
     content_type 'image/png'
-    RestClient.get "#{site}/favicon.png"
+    host = site.split(':').first
+    if farm? && Dir.exists?(File.join(self.class.data_root, "farm", host))
+      local = File.join farm_status(site), 'favicon.png'
+      Favicon.create local unless File.exists? local
+      File.read local
+    else
+      RestClient.get "#{site}/favicon.png"
+    end
   end
 
 end
