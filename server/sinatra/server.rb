@@ -28,8 +28,8 @@ class Controller < Sinatra::Base
     end
   end
 
-  def farm_page
-    data = File.exists?(File.join(self.class.data_root, "farm")) ? File.join(self.class.data_root, "farm", request.host) : self.class.data_root
+  def farm_page(site=request.host)
+    data = File.exists?(File.join(self.class.data_root, "farm")) ? File.join(self.class.data_root, "farm", site) : self.class.data_root
     page = Page.new
     page.directory = File.join(data, "pages")
     page.default_directory = File.join APP_ROOT, "default-data", "pages"
@@ -315,14 +315,19 @@ class Controller < Sinatra::Base
 
   get %r{^/remote/([a-zA-Z0-9:\.-]+)/([a-z0-9-]+)\.json$} do |site, name|
     content_type 'application/json'
-    RestClient.get "#{site}/#{name}.json" do |response, request, result, &block|
-      case response.code
-      when 200
-        response
-      when 404
-        halt 404
-      else
-        response.return!(request, result, &block)
+    host = site.split(':').first
+    if Dir.exists? File.join(self.class.data_root, "farm", host)
+      JSON.pretty_generate(farm_page(host).get(name))
+    else
+      RestClient.get "#{site}/#{name}.json" do |response, request, result, &block|
+        case response.code
+        when 200
+          response
+        when 404
+          halt 404
+        else
+          response.return!(request, result, &block)
+        end
       end
     end
   end
