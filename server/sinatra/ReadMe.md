@@ -47,6 +47,10 @@ The server can host separate pages and status directories for a number of virtua
 
 	data/farm
 
+or by setting the environment variable
+
+	FARM_MODE=true
+
 The server will create subdirectories with farm for each virtual host name and locate pages and status directories within that.
 
 The thin web server cannot handle recursive web requests that can happen with federated sites hosted in the same farm. Use webrick instead. Launch it with this command:

@@ -29,7 +29,7 @@ class Controller < Sinatra::Base
   end
 
   def farm_page(site=request.host)
-    data = File.exists?(File.join(self.class.data_root, "farm")) ? File.join(self.class.data_root, "farm", site) : self.class.data_root
+    data = farm? ? File.join(self.class.data_root, "farm", site) : self.class.data_root
     page = Page.new
     page.directory = File.join(data, "pages")
     page.default_directory = File.join APP_ROOT, "default-data", "pages"
@@ -38,10 +38,14 @@ class Controller < Sinatra::Base
   end
 
   def farm_status
-    data = File.exists?(File.join(self.class.data_root, "farm")) ? File.join(self.class.data_root, "farm", request.host) : self.class.data_root
+    data = farm? ? File.join(self.class.data_root, "farm", request.host) : self.class.data_root
     status = File.join(data, "status")
     FileUtils.mkdir_p status
     status
+  end
+
+  def farm?
+    File.exists?(File.join(self.class.data_root, "farm")) || ENV['FARM_MODE']
   end
 
   def identity
