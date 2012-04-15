@@ -18,20 +18,15 @@ class Page
     # @return [Hash] The contents of the retrieved page (parsed JSON).
     def get(name)
       assert_directories_set
-
       path = File.join(directory, name)
-
-      if File.exist? path
-        load_and_parse path
-      else
+      begin
+        JSON.parse($couch.get(path)['data'])
+      rescue RestClient::ResourceNotFound
         default_path = File.join(default_directory, name)
-
         if File.exist?(default_path)
-          FileUtils.mkdir_p File.dirname(path)
-          FileUtils.cp default_path, path
-          load_and_parse path
+          put name, JSON.parse(File.read(default_path))
         else
-          put name, {'title'=>name,'story'=>[{'type'=>'factory', 'id'=>RandomId.generate}]} unless File.file? path
+          put name, {'title'=>name,'story'=>[{'type'=>'factory', 'id'=>RandomId.generate}]}
         end
       end
     end
@@ -47,15 +42,18 @@ class Page
     # @return [Hash] The contents of the retrieved page (parsed JSON).
     def put(name, page)
       assert_directories_set
-      File.open(File.join(directory, name), 'w') { |file| file.write(JSON.pretty_generate(page)) }
+      path = File.join directory, name
+      begin
+        $couch.save_doc '_id' => path, 'data' => JSON.pretty_generate(page)
+      rescue RestClient::Conflict
+        doc = $couch.get path
+        doc['data'] = JSON.pretty_generate(page)
+        doc.save
+      end
       page
     end
 
     private
-
-    def load_and_parse(path)
-      JSON.parse(File.read(path))
-    end
 
     def assert_directories_set
       raise PageError.new('Page.directory must be set') unless directory

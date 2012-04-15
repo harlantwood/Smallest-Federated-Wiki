@@ -1,6 +1,8 @@
 source :rubygems
 
 gem "sinatra", '1.2.6'
+gem "awesome_print"
+gem "couchrest"
 gem "haml"
 gem "sass"
 gem "json"
