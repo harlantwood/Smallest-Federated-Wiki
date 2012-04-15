@@ -5,6 +5,7 @@ GEM
       ZenTest (~> 4.3)
     ZenTest (4.6.0)
     archive-tar-minitar (0.5.2)
+    awesome_print (1.0.2)
     capybara (1.1.1)
       mime-types (>= 1.16)
       nokogiri (>= 1.3.3)
@@ -16,6 +17,10 @@ GEM
       ffi (~> 1.0.6)
     columnize (0.3.4)
     configuration (1.2.0)
+    couchrest (1.1.2)
+      mime-types (~> 1.15)
+      multi_json (~> 1.0.0)
+      rest-client (~> 1.6.1)
     daemons (1.1.4)
     diff-lcs (1.1.2)
     eventmachine (0.12.10)
@@ -93,7 +98,9 @@ PLATFORMS
 DEPENDENCIES
   RubyInline
   ZenTest (<= 4.6.0)
+  awesome_print
   capybara
+  couchrest
   haml
   json
   launchy

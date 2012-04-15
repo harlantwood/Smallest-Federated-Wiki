@@ -22,6 +22,8 @@ class Controller < Sinatra::Base
   set :versions, `git log -10 --oneline` || "no git log"
   enable :sessions
 
+  $couch = CouchRest.database!("#{ENV['COUCHDB_URL'] || raise( 'please set ENV["COUCHDB_URL"]')}/sfw")
+
   class << self # overridden in test
     def data_root
       File.join APP_ROOT, "data"
