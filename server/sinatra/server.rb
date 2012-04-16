@@ -171,17 +171,15 @@ class Controller < Sinatra::Base
 
     content_type 'image/png'
     path = File.join farm_status, 'favicon.png'
+    favicon = Favicon.create
     begin
       doc = $couch.get(path)
-      favicon = Favicon.create
       doc['data'] = Base64.encode64(favicon)
       doc.save
-      favicon
     rescue RestClient::ResourceNotFound
-      favicon = Favicon.create
       $couch.save_doc '_id' => path, 'data' => Base64.encode64(favicon)
-      favicon
     end
+    favicon
   end
 
   get '/' do
