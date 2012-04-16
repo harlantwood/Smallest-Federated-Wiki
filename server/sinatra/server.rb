@@ -153,9 +153,14 @@ class Controller < Sinatra::Base
   get '/favicon.png' do
     content_type 'image/png'
     cross_origin
-    local = File.join farm_status, 'favicon.png'
-    Favicon.create local unless File.exists? local
-    File.read local
+    path = File.join farm_status, 'favicon.png'
+    begin
+      Base64.decode64($couch.get(path)['data'])
+    rescue RestClient::ResourceNotFound
+      favicon = Favicon.create
+      $couch.save_doc '_id' => path, 'data' => Base64.encode64(favicon)
+      favicon
+    end
   end
 
   get '/random.png' do
@@ -165,9 +170,18 @@ class Controller < Sinatra::Base
     end
 
     content_type 'image/png'
-    local = File.join farm_status, 'favicon.png'
-    Favicon.create local
-    File.read local
+    path = File.join farm_status, 'favicon.png'
+    begin
+      doc = $couch.get(path)
+      favicon = Favicon.create
+      doc['data'] = Base64.encode64(favicon)
+      doc.save
+      favicon
+    rescue RestClient::ResourceNotFound
+      favicon = Favicon.create
+      $couch.save_doc '_id' => path, 'data' => Base64.encode64(favicon)
+      favicon
+    end
   end
 
   get '/' do
