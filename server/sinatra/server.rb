@@ -49,12 +49,14 @@ class Controller < Sinatra::Base
   def identity
     default_path = File.join APP_ROOT, "default-data", "status", "local-identity"
     real_path = File.join farm_status, "local-identity"
-    unless File.exist? real_path
-      FileUtils.mkdir_p File.dirname(real_path)
-      FileUtils.cp default_path, real_path
-    end
 
-    JSON.parse(File.read(real_path))
+    begin
+      JSON.parse($couch.get(real_path)['data'])
+    rescue RestClient::ResourceNotFound
+      id_json = File.read(default_path)
+      $couch.save_doc '_id' => real_path, 'data' => id_json
+      JSON.parse(id_json)
+    end
   end
 
   helpers do
