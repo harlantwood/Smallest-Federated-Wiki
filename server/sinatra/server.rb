@@ -82,7 +82,7 @@ class Controller < Sinatra::Base
     end
 
     def openid_consumer
-      @openid_consumer ||= OpenID::Consumer.new(session, OpenID::Store::Filesystem.new("#{farm_status}/tmp/openid"))
+      @openid_consumer ||= OpenID::Consumer.new(session, nil)
     end
 
     def authenticated?
