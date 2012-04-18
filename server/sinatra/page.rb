@@ -44,16 +44,16 @@ class Page
     def put(name, page)
       assert_directories_set
       path = File.join directory, name
+      page_attrs = {
+        'directory' => directory,
+        'data' => JSON.pretty_generate(page),
+        'updated_at' => Time.now.iso8601
+      }
       begin
-        $couch.save_doc(
-          '_id' => path,
-          'directory' => directory,
-          'data' => JSON.pretty_generate(page),
-          'updated_at' => Time.now.iso8601
-        )
+        $couch.save_doc page_attrs.merge('_id' => path)
       rescue RestClient::Conflict
         doc = $couch.get path
-        doc['data'] = JSON.pretty_generate(page)
+        doc.merge(page_attrs)
         doc.save
       end
       page
