@@ -1,5 +1,6 @@
 require 'json'
 require File.expand_path("../random_id", __FILE__)
+require File.expand_path("../store/couchdb", __FILE__)
 
 class PageError < StandardError; end;
 
@@ -44,7 +45,12 @@ class Page
       assert_directories_set
       path = File.join directory, name
       begin
-        $couch.save_doc '_id' => path, 'data' => JSON.pretty_generate(page)
+        $couch.save_doc(
+          '_id' => path,
+          'directory' => directory,
+          'data' => JSON.pretty_generate(page),
+          'updated_at' => Time.now.iso8601
+        )
       rescue RestClient::Conflict
         doc = $couch.get path
         doc['data'] = JSON.pretty_generate(page)
