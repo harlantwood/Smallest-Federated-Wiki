@@ -53,12 +53,14 @@ class Controller < Sinatra::Base
   def identity
     default_path = File.join APP_ROOT, "default-data", "status", "local-identity"
     real_path = File.join farm_status, "local-identity"
-    unless File.exist? real_path
-      FileUtils.mkdir_p File.dirname(real_path)
-      FileUtils.cp default_path, real_path
-    end
 
-    JSON.parse(File.read(real_path))
+    begin
+      JSON.parse($couch.get(real_path)['data'])
+    rescue RestClient::ResourceNotFound
+      id_json = File.read(default_path)
+      $couch.save_doc '_id' => real_path, 'data' => id_json
+      JSON.parse(id_json)
+    end
   end
 
   helpers do
@@ -88,7 +90,12 @@ class Controller < Sinatra::Base
     end
 
     def claimed?
-      File.exists? "#{farm_status}/open_id.identity"
+      begin
+        $couch.get("#{farm_status}/open_id.identity")
+        true
+      rescue RestClient::ResourceNotFound
+        false
+      end
     end
 
     def authenticate!
@@ -127,16 +134,17 @@ class Controller < Sinatra::Base
       when OpenID::Consumer::SUCCESS
         id = params['openid.identity']
         id_file = File.join farm_status, "open_id.identity"
-        if File.exist?(id_file)
-          stored_id = File.read(id_file)
+
+        begin
+          stored_id = $couch.get(id_file)['data']
           if stored_id == id
             # login successful
             authenticate!
           else
             oops 403, "This is not your wiki"
           end
-        else
-          File.open(id_file, "w") {|f| f << id }
+        rescue RestClient::ResourceNotFound
+          $couch.save_doc '_id' => id_file, 'data' => id
           # claim successful
           authenticate!
         end
