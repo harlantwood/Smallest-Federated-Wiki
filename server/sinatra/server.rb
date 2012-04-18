@@ -14,6 +14,8 @@ require 'favicon'
 require 'openid'
 require 'openid/store/filesystem'
 
+require 'store/couchdb'
+
 class Controller < Sinatra::Base
   set :port, 1111
   set :public, File.join(APP_ROOT, "client")
@@ -21,8 +23,6 @@ class Controller < Sinatra::Base
   set :haml, :format => :html5
   set :versions, `git log -10 --oneline` || "no git log"
   enable :sessions
-
-  $couch = CouchRest.database!("#{ENV['COUCHDB_URL'] || raise( 'please set ENV["COUCHDB_URL"]')}/sfw")
 
   class << self # overridden in test
     def data_root
@@ -161,7 +161,7 @@ class Controller < Sinatra::Base
     begin
       Base64.decode64($couch.get(path)['data'])
     rescue RestClient::ResourceNotFound
-      favicon = Favicon.create
+      favicon = Favicon.raw
       $couch.save_doc '_id' => path, 'data' => Base64.encode64(favicon)
       favicon
     end
@@ -175,17 +175,15 @@ class Controller < Sinatra::Base
 
     content_type 'image/png'
     path = File.join farm_status, 'favicon.png'
+    favicon = Favicon.raw
     begin
       doc = $couch.get(path)
-      favicon = Favicon.create
       doc['data'] = Base64.encode64(favicon)
       doc.save
-      favicon
     rescue RestClient::ResourceNotFound
-      favicon = Favicon.create
       $couch.save_doc '_id' => path, 'data' => Base64.encode64(favicon)
-      favicon
     end
+    favicon
   end
 
   get '/' do
@@ -224,18 +222,39 @@ class Controller < Sinatra::Base
     content_type 'application/json'
     cross_origin
     bins = Hash.new {|hash, key| hash[key] = Array.new}
-    Dir.chdir(farm_page.directory) do
-      Dir.glob("*").collect do |slug|
-        dt = Time.now - File.new(slug).mtime
-        bins[(dt/=60)<1?'Minute':(dt/=60)<1?'Hour':(dt/=24)<1?'Day':(dt/=7)<1?'Week':(dt/=4)<1?'Month':(dt/=3)<1?'Season':(dt/=4)<1?'Year':'Forever']<<slug
-      end
+
+    pages_dir = farm_page.directory
+    pages_dir_safe = CGI.escape(pages_dir)
+
+    rows = begin
+      $couch.view("recent-changes/#{pages_dir_safe}")['rows']
+    rescue RestClient::ResourceNotFound
+      recent_changes_views = $couch.get "_design/recent-changes"
+      recent_changes_views['views'][pages_dir] = {
+        :map => "
+          function(doc) {
+            if (doc.directory == '#{pages_dir}')
+              emit(doc._id, doc)
+          }
+        "
+      }
+      recent_changes_views.save
+      $couch.view("recent-changes/#{pages_dir_safe}")['rows']
     end
+
+    rows.each do |row|
+      page_data = row['value']
+      dt = Time.now - Time.parse(page_data['updated_at'])
+      bins[(dt/=60)<1?'Minute':(dt/=60)<1?'Hour':(dt/=24)<1?'Day':(dt/=7)<1?'Week':(dt/=4)<1?'Month':(dt/=3)<1?'Season':(dt/=4)<1?'Year':'Forever']<<page_data
+    end
+
     story = []
     ['Minute', 'Hour', 'Day', 'Week', 'Month', 'Season', 'Year'].each do |key|
       next unless bins[key].length>0
       story << {'type' => 'paragraph', 'text' => "<h3>Within a #{key}</h3>", 'id' => RandomId.generate}
-      bins[key].each do |slug|
-        page = farm_page.get(slug)
+      bins[key].each do |page_data|
+        slug = page_data['_id'].split('/').last
+        page = JSON.parse(page_data['data'])
         next if page['story'].length == 0
         site = "#{request.host}#{request.port==80 ? '' : ':'+request.port.to_s}"
         story << {'type' => 'federatedWiki', 'site' => site, 'slug' => slug, 'title' => page['title'], 'text' => "", 'id' => RandomId.generate}
