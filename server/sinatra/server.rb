@@ -84,7 +84,12 @@ class Controller < Sinatra::Base
     end
 
     def claimed?
-      File.exists? "#{farm_status}/open_id.identity"
+      begin
+        $couch.get("#{farm_status}/open_id.identity")
+        true
+      rescue RestClient::ResourceNotFound
+        false
+      end
     end
 
     def authenticate!
@@ -123,16 +128,17 @@ class Controller < Sinatra::Base
       when OpenID::Consumer::SUCCESS
         id = params['openid.identity']
         id_file = File.join farm_status, "open_id.identity"
-        if File.exist?(id_file)
-          stored_id = File.read(id_file)
+
+        begin
+          stored_id = $couch.get(id_file)['data']
           if stored_id == id
             # login successful
             authenticate!
           else
             oops 403, "This is not your wiki"
           end
-        else
-          File.open(id_file, "w") {|f| f << id }
+        rescue RestClient::ResourceNotFound
+          $couch.save_doc '_id' => id_file, 'data' => id
           # claim successful
           authenticate!
         end
