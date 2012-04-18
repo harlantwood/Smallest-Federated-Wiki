@@ -3,7 +3,13 @@ require 'png'
 
 class Favicon
   class << self
-    def create
+    #def create(path)
+    #  File.open path, 'wb' do |f|
+    #    f.write raw
+    #  end
+    #end
+
+    def raw
       canvas = PNG::Canvas.new 32, 32
       light = PNG::Color.from_hsv(256*rand,200,255).rgb()
       dark = PNG::Color.from_hsv(256*rand,200,125).rgb()
