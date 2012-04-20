@@ -1,10 +1,19 @@
+class Store
+  class << self
+    def factory(store_classname)
+      store_classname ? Object.const_get(store_classname) : FileStore
+    end
+  end
+end
+
+
 class FileStore
   class << self
 
     ### GET
 
     def get_text(path)
-      File.read(path) if File.exist?(path)
+      File.read path if File.exist? path
     end
 
     alias_method :get_blob, :get_text

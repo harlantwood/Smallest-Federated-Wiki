@@ -7,6 +7,7 @@ $LOAD_PATH.unshift(File.dirname(__FILE__))
 SINATRA_ROOT = File.expand_path(File.dirname(__FILE__))
 APP_ROOT = File.expand_path(File.join(SINATRA_ROOT, "..", ".."))
 
+require 'stores'
 require 'random_id'
 require 'page'
 require 'favicon'
@@ -20,9 +21,10 @@ class Controller < Sinatra::Base
   set :views , File.join(SINATRA_ROOT, "views")
   set :haml, :format => :html5
   set :versions, `git log -10 --oneline` || "no git log"
-  set :store, ENV['STORE_TYPE'] ? Object.const_get(ENV['STORE_TYPE']) : FileStore
 
   enable :sessions
+
+  @@store = Page.store = Store.factory(ENV['STORE_CLASS'])
 
   class << self # overridden in test
     def data_root
@@ -33,7 +35,6 @@ class Controller < Sinatra::Base
   def farm_page
     data = File.exists?(File.join(self.class.data_root, "farm")) ? File.join(self.class.data_root, "farm", request.host) : self.class.data_root
     page = Page.new
-    page.store = settings.store
     page.directory = File.join(data, "pages")
     page.default_directory = File.join APP_ROOT, "default-data", "pages"
     FileUtils.mkdir_p page.directory
@@ -50,8 +51,8 @@ class Controller < Sinatra::Base
   def identity
     default_path = File.join APP_ROOT, "default-data", "status", "local-identity"
     real_path = File.join farm_status, "local-identity"
-    id_data = settings.store.get_json real_path
-    id_data ||= settings.store.put_json(real_path, File.read(default_path))
+    id_data = @@store.get_json real_path
+    id_data ||= @@store.put_json(real_path, File.read(default_path))
   end
 
   helpers do
@@ -81,7 +82,7 @@ class Controller < Sinatra::Base
     end
 
     def claimed?
-      !!settings.store.get_text("#{farm_status}/open_id.identity")
+      !!@@store.get_text("#{farm_status}/open_id.identity")
     end
 
     def authenticate!
@@ -120,7 +121,7 @@ class Controller < Sinatra::Base
       when OpenID::Consumer::SUCCESS
         id = params['openid.identity']
         id_file = File.join farm_status, "open_id.identity"
-        stored_id = settings.store.get_text(id_file)
+        stored_id = @@store.get_text(id_file)
         if stored_id
           if stored_id == id
             # login successful
@@ -129,7 +130,7 @@ class Controller < Sinatra::Base
             oops 403, "This is not your wiki"
           end
         else
-          settings.store.put_text id_file, id
+          @@store.put_text id_file, id
           # claim successful
           authenticate!
         end
@@ -151,7 +152,7 @@ class Controller < Sinatra::Base
     content_type 'image/png'
     cross_origin
     local = File.join farm_status, 'favicon.png'
-    settings.store.get_blob(local) || settings.store.put_blob(local, Favicon.create_blob)
+    @@store.get_blob(local) || @@store.put_blob(local, Favicon.create_blob)
   end
 
   get '/random.png' do
@@ -162,7 +163,7 @@ class Controller < Sinatra::Base
 
     content_type 'image/png'
     path = File.join farm_status, 'favicon.png'
-    settings.store.put_blob path, Favicon.create_blob
+    @@store.put_blob path, Favicon.create_blob
   end
 
   get '/' do
