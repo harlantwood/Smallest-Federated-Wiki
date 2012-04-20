@@ -31,7 +31,7 @@ class Page
       if page
         page
       elsif File.exist?(default_path)
-        put name, JSON.parse(File.read(default_path))
+        put name, @@store.get_page(default_path)
       else
         put name, {'title'=>name,'story'=>[{'type'=>'factory', 'id'=>RandomId.generate}]}
       end
@@ -49,9 +49,7 @@ class Page
     def put(name, page)
       assert_attributes_set
       path = File.join directory, name
-      data = JSON.pretty_generate(page)
-      @@store.put_page(path, data, :directory => directory)
-      page
+      @@store.put_page(path, page, :directory => directory)
     end
 
     private

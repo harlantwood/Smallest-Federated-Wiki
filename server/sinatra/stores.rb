@@ -1,3 +1,6 @@
+require 'time'  # for Time#iso8601
+
+
 class Store
   class << self
     def factory(store_classname)
@@ -18,12 +21,12 @@ class FileStore
 
     alias_method :get_blob, :get_text
 
-    def get_json(path)
+    def get_hash(path)
       json = get_text(path)
       JSON.parse json if json
     end
 
-    alias_method :get_page, :get_json
+    alias_method :get_page, :get_hash
 
     ### PUT
 
@@ -39,14 +42,14 @@ class FileStore
       blob
     end
 
-    def put_json(path, json)
-      put_text(path, json)
-      JSON.parse json
+    def put_hash(path, ruby_data)
+      put_text path, JSON.pretty_generate(ruby_data)
+      ruby_data
     end
 
-    def put_page(path, text, metadata)
+    def put_page(path, page, metadata)
       # note: metadata is ignored in FileStore
-      put_json(path, text)
+      put_hash(path, page)
     end
 
   end
@@ -76,19 +79,19 @@ class CouchStore
       Base64.decode64 blob if blob
     end
 
-    def get_json(path)
+    def get_hash(path)
       json = get_text path
       JSON.parse json if json
     end
 
-    alias_method :get_page, :get_json
+    alias_method :get_page, :get_hash
 
     ### PUT
 
     def put_text(path, text, metadata={})
       attrs = {
         'data' => text,
-        'updated_at' => Time.now.iso8601
+        'updated_at' => Time.now.utc.iso8601
       }.merge! metadata
 
       begin
@@ -101,12 +104,13 @@ class CouchStore
       text
     end
 
-    def put_json(path, json, metadata)
+    def put_hash(path, ruby_data, metadata={})
+      json = JSON.pretty_generate(ruby_data)
       put_text path, json, metadata
-      JSON.parse json
+      ruby_data
     end
 
-    alias_method :put_page, :put_json
+    alias_method :put_page, :put_hash
 
     def put_blob(path, blob)
       put_text path, Base64.strict_encode64(blob)
