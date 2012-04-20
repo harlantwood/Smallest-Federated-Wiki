@@ -20,6 +20,8 @@ class Controller < Sinatra::Base
   set :views , File.join(SINATRA_ROOT, "views")
   set :haml, :format => :html5
   set :versions, `git log -10 --oneline` || "no git log"
+  set :store, ENV['STORE_TYPE'] ? Object.const_get(ENV['STORE_TYPE']) : FileStore
+
   enable :sessions
 
   class << self # overridden in test
@@ -31,6 +33,7 @@ class Controller < Sinatra::Base
   def farm_page
     data = File.exists?(File.join(self.class.data_root, "farm")) ? File.join(self.class.data_root, "farm", request.host) : self.class.data_root
     page = Page.new
+    page.store = settings.store
     page.directory = File.join(data, "pages")
     page.default_directory = File.join APP_ROOT, "default-data", "pages"
     FileUtils.mkdir_p page.directory
@@ -47,12 +50,8 @@ class Controller < Sinatra::Base
   def identity
     default_path = File.join APP_ROOT, "default-data", "status", "local-identity"
     real_path = File.join farm_status, "local-identity"
-    unless File.exist? real_path
-      FileUtils.mkdir_p File.dirname(real_path)
-      FileUtils.cp default_path, real_path
-    end
-
-    JSON.parse(File.read(real_path))
+    id_data = settings.store.get_json real_path
+    id_data ||= settings.store.put_json(real_path, File.read(default_path))
   end
 
   helpers do
@@ -82,7 +81,7 @@ class Controller < Sinatra::Base
     end
 
     def claimed?
-      File.exists? "#{farm_status}/open_id.identity"
+      !!settings.store.get_text("#{farm_status}/open_id.identity")
     end
 
     def authenticate!
@@ -121,8 +120,8 @@ class Controller < Sinatra::Base
       when OpenID::Consumer::SUCCESS
         id = params['openid.identity']
         id_file = File.join farm_status, "open_id.identity"
-        if File.exist?(id_file)
-          stored_id = File.read(id_file)
+        stored_id = settings.store.get_text(id_file)
+        if stored_id
           if stored_id == id
             # login successful
             authenticate!
@@ -130,7 +129,7 @@ class Controller < Sinatra::Base
             oops 403, "This is not your wiki"
           end
         else
-          File.open(id_file, "w") {|f| f << id }
+          settings.store.put_text id_file, id
           # claim successful
           authenticate!
         end
@@ -152,8 +151,7 @@ class Controller < Sinatra::Base
     content_type 'image/png'
     cross_origin
     local = File.join farm_status, 'favicon.png'
-    Favicon.create local unless File.exists? local
-    File.read local
+    settings.store.get_blob(local) || settings.store.put_blob(local, Favicon.create_blob)
   end
 
   get '/random.png' do
@@ -163,9 +161,8 @@ class Controller < Sinatra::Base
     end
 
     content_type 'image/png'
-    local = File.join farm_status, 'favicon.png'
-    Favicon.create local
-    File.read local
+    path = File.join farm_status, 'favicon.png'
+    settings.store.put_blob path, Favicon.create_blob
   end
 
   get '/' do
@@ -200,30 +197,51 @@ class Controller < Sinatra::Base
     haml :view, :locals => {:pages => pages}
   end
 
-  get '/recent-changes.json' do
-    content_type 'application/json'
-    cross_origin
-    bins = Hash.new {|hash, key| hash[key] = Array.new}
-    Dir.chdir(farm_page.directory) do
-      Dir.glob("*").collect do |slug|
-        dt = Time.now - File.new(slug).mtime
-        bins[(dt/=60)<1?'Minute':(dt/=60)<1?'Hour':(dt/=24)<1?'Day':(dt/=7)<1?'Week':(dt/=4)<1?'Month':(dt/=3)<1?'Season':(dt/=4)<1?'Year':'Forever']<<slug
-      end
-    end
-    story = []
-    ['Minute', 'Hour', 'Day', 'Week', 'Month', 'Season', 'Year'].each do |key|
-      next unless bins[key].length>0
-      story << {'type' => 'paragraph', 'text' => "<h3>Within a #{key}</h3>", 'id' => RandomId.generate}
-      bins[key].each do |slug|
-        page = farm_page.get(slug)
-        next if page['story'].length == 0
-        site = "#{request.host}#{request.port==80 ? '' : ':'+request.port.to_s}"
-        story << {'type' => 'federatedWiki', 'site' => site, 'slug' => slug, 'title' => page['title'], 'text' => "", 'id' => RandomId.generate}
-      end
-    end
-    page = {'title' => 'Recent Changes', 'story' => story}
-    JSON.pretty_generate(page)
-  end
+  #get '/recent-changes.json' do
+  #  content_type 'application/json'
+  #  cross_origin
+  #  bins = Hash.new {|hash, key| hash[key] = Array.new}
+  #
+  #  pages_dir = farm_page.directory
+  #  pages_dir_safe = CGI.escape(pages_dir)
+  #
+  #  rows = begin
+  #    $couch.view("recent-changes/#{pages_dir_safe}")['rows']
+  #  rescue RestClient::ResourceNotFound
+  #    recent_changes_views = $couch.get "_design/recent-changes"
+  #    recent_changes_views['views'][pages_dir] = {
+  #      :map => "
+  #        function(doc) {
+  #          if (doc.directory == '#{pages_dir}')
+  #            emit(doc._id, doc)
+  #        }
+  #      "
+  #    }
+  #    recent_changes_views.save
+  #    $couch.view("recent-changes/#{pages_dir_safe}")['rows']
+  #  end
+  #
+  #  rows.each do |row|
+  #    page_data = row['value']
+  #    dt = Time.now - Time.parse(page_data['updated_at'])
+  #    bins[(dt/=60)<1?'Minute':(dt/=60)<1?'Hour':(dt/=24)<1?'Day':(dt/=7)<1?'Week':(dt/=4)<1?'Month':(dt/=3)<1?'Season':(dt/=4)<1?'Year':'Forever']<<page_data
+  #  end
+  #
+  #  story = []
+  #  ['Minute', 'Hour', 'Day', 'Week', 'Month', 'Season', 'Year'].each do |key|
+  #    next unless bins[key].length>0
+  #    story << {'type' => 'paragraph', 'text' => "<h3>Within a #{key}</h3>", 'id' => RandomId.generate}
+  #    bins[key].each do |page_data|
+  #      slug = page_data['_id'].split('/').last
+  #      page = JSON.parse(page_data['data'])
+  #      next if page['story'].length == 0
+  #      site = "#{request.host}#{request.port==80 ? '' : ':'+request.port.to_s}"
+  #      story << {'type' => 'federatedWiki', 'site' => site, 'slug' => slug, 'title' => page['title'], 'text' => "", 'id' => RandomId.generate}
+  #    end
+  #  end
+  #  page = {'title' => 'Recent Changes', 'story' => story}
+  #  JSON.pretty_generate(page)
+  #end
 
   # get '/global-changes.json' do
   #   content_type 'application/json'

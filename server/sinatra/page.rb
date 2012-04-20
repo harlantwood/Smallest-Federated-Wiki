@@ -1,5 +1,6 @@
 require 'json'
 require File.expand_path("../random_id", __FILE__)
+require File.expand_path("../stores", __FILE__)
 
 class PageError < StandardError; end;
 
@@ -7,6 +8,8 @@ class PageError < StandardError; end;
 # Handles writing and reading JSON data to and from files.
 class Page
   # class << self
+    # Store class which handles storing pages
+    attr_accessor :store
     # Directory where pages are to be stored.
     attr_accessor :directory
     # Directory where default (pre-existing) pages are stored.
@@ -17,27 +20,21 @@ class Page
     # @param [String] name - The name of the file to retrieve, relative to Page.directory.
     # @return [Hash] The contents of the retrieved page (parsed JSON).
     def get(name)
-      assert_directories_set
-
+      assert_attributes_set
       path = File.join(directory, name)
-
-      if File.exist? path
-        load_and_parse path
+      default_path = File.join(default_directory, name)
+      page = store.get_page(path)
+      if page
+        page
+      elsif File.exist?(default_path)
+        put name, JSON.parse(File.read(default_path))
       else
-        default_path = File.join(default_directory, name)
-
-        if File.exist?(default_path)
-          FileUtils.mkdir_p File.dirname(path)
-          FileUtils.cp default_path, path
-          load_and_parse path
-        else
-          put name, {'title'=>name,'story'=>[{'type'=>'factory', 'id'=>RandomId.generate}]} unless File.file? path
-        end
+        put name, {'title'=>name,'story'=>[{'type'=>'factory', 'id'=>RandomId.generate}]}
       end
     end
 
     def exists?(name)
-      File.exists?(File.join(directory, name)) or File.exist?(File.join(default_directory, name))
+      store.get_page(File.join(directory, name)) or File.exist?(File.join(default_directory, name))
     end
 
     # Create or update a page
@@ -46,20 +43,18 @@ class Page
     # @param [Hash] page - The page data to be written to the file (it will be converted to JSON).
     # @return [Hash] The contents of the retrieved page (parsed JSON).
     def put(name, page)
-      assert_directories_set
-      File.open(File.join(directory, name), 'w') { |file| file.write(JSON.pretty_generate(page)) }
+      assert_attributes_set
+      path = File.join directory, name
+      data = JSON.pretty_generate(page)
+      store.put_page(path, data, :directory => directory)
       page
     end
 
     private
 
-    def load_and_parse(path)
-      JSON.parse(File.read(path))
-    end
-
-    def assert_directories_set
+    def assert_attributes_set
       raise PageError.new('Page.directory must be set') unless directory
       raise PageError.new('Page.default_directory must be set') unless default_directory
+      raise PageError.new('Page.store must be set') unless store
     end
-  # end
 end

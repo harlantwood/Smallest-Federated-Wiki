@@ -3,6 +3,7 @@ require File.dirname(__FILE__) + '/spec_helper'
 describe "Page" do
   before(:all) do
     @page = Page.new
+    @page.store = FileStore
     @page.directory = nil
     @page.default_directory = nil
   end
