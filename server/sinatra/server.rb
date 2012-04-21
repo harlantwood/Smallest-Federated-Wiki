@@ -203,41 +203,20 @@ class Controller < Sinatra::Base
     cross_origin
     bins = Hash.new {|hash, key| hash[key] = Array.new}
 
-    pages_dir = farm_page.directory
-    pages_dir_safe = CGI.escape(pages_dir)
-
-    rows = begin
-      $couch.view("recent-changes/#{pages_dir_safe}")['rows']
-    rescue RestClient::ResourceNotFound
-      recent_changes_views = $couch.get "_design/recent-changes"
-      recent_changes_views['views'][pages_dir] = {
-        :map => "
-          function(doc) {
-            if (doc.directory == '#{pages_dir}')
-              emit(doc._id, doc)
-          }
-        "
-      }
-      recent_changes_views.save
-      $couch.view("recent-changes/#{pages_dir_safe}")['rows']
-    end
-
-    rows.each do |row|
-      page_data = row['value']
-      dt = Time.now - Time.parse(page_data['updated_at'])
-      bins[(dt/=60)<1?'Minute':(dt/=60)<1?'Hour':(dt/=24)<1?'Day':(dt/=7)<1?'Week':(dt/=4)<1?'Month':(dt/=3)<1?'Season':(dt/=4)<1?'Year':'Forever']<<page_data
+    pages = @@store.recently_changed_pages farm_page.directory
+    pages.each do |page|
+      dt = Time.now - page['updated_at']
+      bins[(dt/=60)<1?'Minute':(dt/=60)<1?'Hour':(dt/=24)<1?'Day':(dt/=7)<1?'Week':(dt/=4)<1?'Month':(dt/=3)<1?'Season':(dt/=4)<1?'Year':'Forever']<<page
     end
 
     story = []
     ['Minute', 'Hour', 'Day', 'Week', 'Month', 'Season', 'Year'].each do |key|
       next unless bins[key].length>0
       story << {'type' => 'paragraph', 'text' => "<h3>Within a #{key}</h3>", 'id' => RandomId.generate}
-      bins[key].each do |page_data|
-        slug = page_data['_id'].split('/').last
-        page = JSON.parse(page_data['data'])
-        next if page['story'].length == 0
+      bins[key].each do |page|
+        next if page['story'].empty?
         site = "#{request.host}#{request.port==80 ? '' : ':'+request.port.to_s}"
-        story << {'type' => 'federatedWiki', 'site' => site, 'slug' => slug, 'title' => page['title'], 'text' => "", 'id' => RandomId.generate}
+        story << {'type' => 'federatedWiki', 'site' => site, 'slug' => page['name'], 'title' => page['title'], 'text' => "", 'id' => RandomId.generate}
       end
     end
     page = {'title' => 'Recent Changes', 'story' => story}

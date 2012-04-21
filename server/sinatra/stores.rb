@@ -52,6 +52,20 @@ class FileStore
       put_hash(path, page)
     end
 
+    ### COLLECTIONS
+
+    def recently_changed_pages(pages_dir)
+      Dir.chdir(pages_dir) do
+        Dir.glob("*").collect do |name|
+          page = get_page(File.join pages_dir, name)
+          page.merge!({
+            'name' => name,
+            'updated_at' => File.new(name).mtime
+          })
+        end
+      end
+    end
+
   end
 end
 
@@ -115,6 +129,37 @@ class CouchStore
     def put_blob(path, blob)
       put_text path, Base64.strict_encode64(blob)
       blob
+    end
+
+    ### COLLECTIONS
+
+    def recently_changed_pages(pages_dir)
+
+      pages_dir_safe = CGI.escape pages_dir
+      changes = begin
+        @db.view("recent-changes/#{pages_dir_safe}")['rows']
+      rescue RestClient::ResourceNotFound
+        recent_changes_views = @db.get "_design/recent-changes"
+        recent_changes_views['views'][pages_dir] = {
+          :map => "
+            function(doc) {
+              if (doc.directory == '#{pages_dir}')
+                emit(doc._id, doc)
+            }
+          "
+        }
+        recent_changes_views.save
+        @db.view("recent-changes/#{pages_dir_safe}")['rows']
+      end
+
+      pages = changes.map do |change|
+        page = JSON.parse change['value']['data']
+        page.merge! 'updated_at' => Time.parse(change['value']['updated_at'])
+        page.merge! 'name' => change['value']['name']
+        page
+      end
+
+      pages
     end
 
   end

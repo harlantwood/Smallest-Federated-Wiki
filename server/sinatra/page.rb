@@ -49,7 +49,7 @@ class Page
     def put(name, page)
       assert_attributes_set
       path = File.join directory, name
-      @@store.put_page(path, page, :directory => directory)
+      @@store.put_page(path, page, :name => name, :directory => directory)
     end
 
     private
