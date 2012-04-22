@@ -26,6 +26,13 @@ class Store
 
     alias_method :put_page, :put_hash
 
+    ### UTILITY
+
+    def exists?(path)
+      result = get_text path
+      result && !result.empty?
+    end
+
   end
 end
 

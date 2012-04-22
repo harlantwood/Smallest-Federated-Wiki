@@ -82,7 +82,7 @@ class Controller < Sinatra::Base
     end
 
     def claimed?
-      !!@@store.get_text("#{farm_status}/open_id.identity")
+      @@store.exists? "#{farm_status}/open_id.identity"
     end
 
     def authenticate!
