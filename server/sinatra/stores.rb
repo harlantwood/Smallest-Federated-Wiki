@@ -125,21 +125,11 @@ class CouchStore
     ### COLLECTIONS
 
     def recently_changed_pages(pages_dir)
-
       pages_dir_safe = CGI.escape pages_dir
       changes = begin
         @db.view("recent-changes/#{pages_dir_safe}")['rows']
       rescue RestClient::ResourceNotFound
-        recent_changes_views = @db.get "_design/recent-changes"
-        recent_changes_views['views'][pages_dir] = {
-          :map => "
-            function(doc) {
-              if (doc.directory == '#{pages_dir}')
-                emit(doc._id, doc)
-            }
-          "
-        }
-        recent_changes_views.save
+        create_view 'recent-changes', pages_dir
         @db.view("recent-changes/#{pages_dir_safe}")['rows']
       end
 
@@ -151,6 +141,21 @@ class CouchStore
       end
 
       pages
+    end
+
+    ### UTILITY
+
+    def create_view(design_name, view_name)
+      design = @db.get "_design/#{design_name}"
+      design['views'][view_name] = {
+        :map => "
+          function(doc) {
+            if (doc.directory == '#{view_name}')
+              emit(doc._id, doc)
+          }
+        "
+      }
+      design.save
     end
 
   end
