@@ -115,6 +115,67 @@ describe "GET /welcome-visitors.json" do
   end
 end
 
+describe "GET /recent-changes.json" do
+  def create_sample_page
+    page = { "title" => "A Page", "story" => [ { "type" => "paragraph", "text" => "Hello test" } ] }
+    pages_path = File.join TestDirs::TEST_DATA_DIR, 'pages'
+    FileUtils.rm_f    pages_path
+    FileUtils.mkdir_p pages_path
+    page_path = File.join pages_path, 'a-page'
+    File.open(page_path, 'w'){|file| file.write(page.to_json)}
+  end
+
+  before(:all) do
+    create_sample_page
+    get "/recent-changes.json"
+    @response = last_response
+    @body = last_response.body
+  end
+
+  it "returns 200" do
+    unless @response.status == 200
+      File.open('spec/last_response.html', 'w') { |file| file.write(@body) }
+      `open spec/last_response.html`
+    end
+    @response.status.should == 200
+  end
+
+  it "returns Content-Type application/json" do
+    last_response.header["Content-Type"].should == "application/json"
+  end
+
+  it "returns valid JSON" do
+    expect {
+      JSON.parse(@body)
+    }.should_not raise_error
+  end
+
+  context "the JSON" do
+    before(:all) do
+      @json = JSON.parse(@body)
+    end
+
+    it "has a title string" do
+      @json['title'].class.should == String
+    end
+
+    it "has a story array" do
+      @json['story'].class.should == Array
+    end
+
+    it "has the heading 'Within a Minute'" do
+      @json['story'].first['text'].should == "<h3>Within a Minute</h3>"
+      @json['story'].first['type'].should == 'paragraph'
+    end
+
+    it "has a listing of the single recent change" do
+      @json['story'][1]['slug'].should == "a-page"
+      @json['story'][1]['title'].should == "A Page"
+      @json['story'][1]['type'].should == 'federatedWiki'
+    end
+  end
+end
+
 describe "GET /non-existent-test-page" do
   before(:all) do
     @non_existent_page = "#{TestDirs::TEST_DATA_DIR}/pages/non-existent-test-page"
