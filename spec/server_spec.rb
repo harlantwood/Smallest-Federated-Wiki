@@ -71,15 +71,9 @@ describe "GET /view/welcome-visitors/view/indie-web-camp" do
   end
 end
 
-describe "GET /welcome-visitors.json" do
-  before(:all) do
-    get "/welcome-visitors.json"
-    @response = last_response
-    @body = last_response.body
-  end
-
+shared_examples_for "GET to JSON resource" do
   it "returns 200" do
-    last_response.status.should == 200
+    @response.status.should == 200
   end
 
   it "returns Content-Type application/json" do
@@ -91,6 +85,16 @@ describe "GET /welcome-visitors.json" do
       JSON.parse(@body)
     }.should_not raise_error
   end
+end
+
+describe "GET /welcome-visitors.json" do
+  before(:all) do
+    get "/welcome-visitors.json"
+    @response = last_response
+    @body = last_response.body
+  end
+
+  it_behaves_like "GET to JSON resource"
 
   context "JSON from GET /welcome-visitors.json" do
     before(:all) do
@@ -101,7 +105,7 @@ describe "GET /welcome-visitors.json" do
       @json['title'].class.should == String
     end
 
-    it "has a story arry" do
+    it "has a story array" do
       @json['story'].class.should == Array
     end
 
@@ -130,31 +134,12 @@ describe "GET /recent-changes.json" do
     get "/recent-changes.json"
     @response = last_response
     @body = last_response.body
+    @json = JSON.parse(@body)
   end
 
-  it "returns 200" do
-    unless @response.status == 200
-      File.open('spec/last_response.html', 'w') { |file| file.write(@body) }
-      `open spec/last_response.html`
-    end
-    @response.status.should == 200
-  end
-
-  it "returns Content-Type application/json" do
-    last_response.header["Content-Type"].should == "application/json"
-  end
-
-  it "returns valid JSON" do
-    expect {
-      JSON.parse(@body)
-    }.should_not raise_error
-  end
+  it_behaves_like "GET to JSON resource"
 
   context "the JSON" do
-    before(:all) do
-      @json = JSON.parse(@body)
-    end
-
     it "has a title string" do
       @json['title'].class.should == String
     end
