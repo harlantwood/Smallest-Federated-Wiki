@@ -6,11 +6,31 @@ class Store
     def factory(store_classname)
       store_classname ? Kernel.const_get(store_classname) : FileStore
     end
+
+    ### GET
+
+    def get_hash(path)
+      json = get_text path
+      JSON.parse json if json
+    end
+
+    alias_method :get_page, :get_hash
+
+    ### PUT
+
+    def put_hash(path, ruby_data, metadata={})
+      json = JSON.pretty_generate(ruby_data)
+      put_text path, json, metadata
+      ruby_data
+    end
+
+    alias_method :put_page, :put_hash
+
   end
 end
 
 
-class FileStore
+class FileStore < Store
   class << self
 
     ### GET
@@ -21,17 +41,13 @@ class FileStore
 
     alias_method :get_blob, :get_text
 
-    def get_hash(path)
-      json = get_text(path)
-      JSON.parse json if json
-    end
-
-    alias_method :get_page, :get_hash
-
     ### PUT
 
-    def put_text(path, text)
-      File.open(path, 'w') { |file| file.write(text) }
+    def put_text(path, text, _)
+      # Note: the third argument, metadata, is ignored for filesystem storage
+      File.open path, 'w' do |file|
+        file.write text
+      end
       text
     end
 
@@ -40,16 +56,6 @@ class FileStore
         file.write blob
       end
       blob
-    end
-
-    def put_hash(path, ruby_data)
-      put_text path, JSON.pretty_generate(ruby_data)
-      ruby_data
-    end
-
-    def put_page(path, page, metadata)
-      # note: metadata is ignored in FileStore
-      put_hash(path, page)
     end
 
     ### COLLECTIONS
@@ -93,13 +99,6 @@ class CouchStore
       Base64.decode64 blob if blob
     end
 
-    def get_hash(path)
-      json = get_text path
-      JSON.parse json if json
-    end
-
-    alias_method :get_page, :get_hash
-
     ### PUT
 
     def put_text(path, text, metadata={})
@@ -117,14 +116,6 @@ class CouchStore
       end
       text
     end
-
-    def put_hash(path, ruby_data, metadata={})
-      json = JSON.pretty_generate(ruby_data)
-      put_text path, json, metadata
-      ruby_data
-    end
-
-    alias_method :put_page, :put_hash
 
     def put_blob(path, blob)
       put_text path, Base64.strict_encode64(blob)
