@@ -4,7 +4,7 @@ require 'time'  # for Time#iso8601
 class Store
   class << self
     def factory(store_classname)
-      store_classname ? Object.const_get(store_classname) : FileStore
+      store_classname ? Kernel.const_get(store_classname) : FileStore
     end
   end
 end
