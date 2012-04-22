@@ -31,7 +31,7 @@ class Page
       if page
         page
       elsif File.exist?(default_path)
-        put name, @@store.get_page(default_path)
+        put name, FileStore.get_page(default_path)
       else
         put name, {'title'=>name,'story'=>[{'type'=>'factory', 'id'=>RandomId.generate}]}
       end

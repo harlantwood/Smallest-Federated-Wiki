@@ -52,7 +52,7 @@ class Controller < Sinatra::Base
     default_path = File.join APP_ROOT, "default-data", "status", "local-identity"
     real_path = File.join farm_status, "local-identity"
     id_data = @@store.get_hash real_path
-    id_data ||= @@store.put_hash(real_path, @@store.get_hash(default_path))
+    id_data ||= @@store.put_hash(real_path, FileStore.get_hash(default_path))
   end
 
   helpers do
