@@ -3,7 +3,7 @@ require 'time'  # for Time#iso8601
 
 class Store
   class << self
-    def factory(store_classname)
+    def select(store_classname)
       store_classname ? Kernel.const_get(store_classname) : FileStore
     end
 
@@ -25,13 +25,6 @@ class Store
     end
 
     alias_method :put_page, :put_hash
-
-    ### UTILITY
-
-    def exists?(path)
-      result = get_text path
-      result && !result.empty?
-    end
 
   end
 end
@@ -79,23 +72,48 @@ class FileStore < Store
       end
     end
 
+    ### UTILITY
+
+    def farm?(data_root)
+      File.exists?(File.join data_root, "farm")
+    end
+
+    def mkdir(directory)
+      FileUtils.mkdir_p directory
+    end
+
+    def exists?(path)
+      File.exists?(path)
+    end
   end
 end
 
 
-class CouchStore
+class CouchStore < Store
   class << self
-    attr_writer :db
 
-    #def db
-    #  @db = CouchRest.database!("#{ENV['COUCHDB_URL'] || raise('please set ENV["COUCHDB_URL"]')}/sfw")
-    #end
+    def db
+      unless @db
+        couchdb_server = ENV['COUCHDB_URL'] || raise('please set ENV["COUCHDB_URL"]')
+        @db = CouchRest.database!("#{couchdb_server}/SFW")
+        begin
+          @db.save_doc "_id" => "_design/recent-changes", :views => {}
+        rescue RestClient::Conflict
+          # design document already exists, do nothing
+        end
+      end
+      @db
+    end
+
+    def db=(db)
+      @db = db
+    end
 
     ### GET
 
     def get_text(path)
       begin
-        @db.get(path)['data']
+        db.get(path)['data']
       rescue RestClient::ResourceNotFound
         nil
       end
@@ -115,9 +133,9 @@ class CouchStore
       }.merge! metadata
 
       begin
-        @db.save_doc attrs.merge('_id' => path)
+        db.save_doc attrs.merge('_id' => path)
       rescue RestClient::Conflict
-        doc = @db.get path
+        doc = db.get path
         doc.merge! attrs
         doc.save
       end
@@ -134,10 +152,10 @@ class CouchStore
     def recently_changed_pages(pages_dir)
       pages_dir_safe = CGI.escape pages_dir
       changes = begin
-        @db.view("recent-changes/#{pages_dir_safe}")['rows']
+        db.view("recent-changes/#{pages_dir_safe}")['rows']
       rescue RestClient::ResourceNotFound
         create_view 'recent-changes', pages_dir
-        @db.view("recent-changes/#{pages_dir_safe}")['rows']
+        db.view("recent-changes/#{pages_dir_safe}")['rows']
       end
 
       pages = changes.map do |change|
@@ -153,7 +171,7 @@ class CouchStore
     ### UTILITY
 
     def create_view(design_name, view_name)
-      design = @db.get "_design/#{design_name}"
+      design = db.get "_design/#{design_name}"
       design['views'][view_name] = {
         :map => "
           function(doc) {
@@ -163,6 +181,18 @@ class CouchStore
         "
       }
       design.save
+    end
+
+    def farm?(_)
+      ENV['FARM_MODE'] && !ENV['FARM_MODE'].empty?
+    end
+
+    def mkdir(_)
+      # do nothing
+    end
+
+    def exists?(path)
+      !(get_text(path)).nil?
     end
 
   end

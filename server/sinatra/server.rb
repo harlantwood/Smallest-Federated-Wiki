@@ -24,7 +24,7 @@ class Controller < Sinatra::Base
 
   enable :sessions
 
-  @@store = Page.store = Store.factory(ENV['STORE_CLASS'])
+  @@store = Page.store = Store.select(ENV['STORE_TYPE'])
 
   class << self # overridden in test
     def data_root
@@ -33,19 +33,21 @@ class Controller < Sinatra::Base
   end
 
   def farm_page
-    data = File.exists?(File.join(self.class.data_root, "farm")) ? File.join(self.class.data_root, "farm", request.host) : self.class.data_root
     page = Page.new
-    page.directory = File.join(data, "pages")
+    page.directory = File.join data_dir, "pages"
     page.default_directory = File.join APP_ROOT, "default-data", "pages"
-    FileUtils.mkdir_p page.directory
+    @@store.mkdir page.directory
     page
   end
 
   def farm_status
-    data = File.exists?(File.join(self.class.data_root, "farm")) ? File.join(self.class.data_root, "farm", request.host) : self.class.data_root
-    status = File.join(data, "status")
-    FileUtils.mkdir_p status
+    status = File.join data_dir, "status"
+    @@store.mkdir status
     status
+  end
+
+  def data_dir
+    @@store.farm?(self.class.data_root) ? File.join(self.class.data_root, "farm", request.host) : self.class.data_root
   end
 
   def identity
