@@ -118,7 +118,7 @@ class CouchStore
         @db.save_doc attrs.merge('_id' => path)
       rescue RestClient::Conflict
         doc = @db.get path
-        doc.merge attrs
+        doc.merge! attrs
         doc.save
       end
       text

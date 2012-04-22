@@ -4,7 +4,7 @@ require File.dirname(__FILE__) + '/../server/sinatra/stores'
 describe CouchStore do
   before do
     @db = CouchStore.db = double()
-    @couch_doc = double(:save => nil, :merge => nil, :[]= => nil)
+    @couch_doc = double(:save => nil, :merge! => nil, :[]= => nil)
   end
 
   describe 'put_text' do
