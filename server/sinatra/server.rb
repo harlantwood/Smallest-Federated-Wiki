@@ -7,7 +7,7 @@ $LOAD_PATH.unshift(File.dirname(__FILE__))
 SINATRA_ROOT = File.expand_path(File.dirname(__FILE__))
 APP_ROOT = File.expand_path(File.join(SINATRA_ROOT, "..", ".."))
 
-require 'stores'
+require 'stores/all'
 require 'random_id'
 require 'page'
 require 'favicon'
@@ -24,7 +24,7 @@ class Controller < Sinatra::Base
 
   enable :sessions
 
-  @@store = Page.store = Store.select(ENV['STORE_TYPE'])
+  @@store = Page.store = BaseStore.select(ENV['STORE_TYPE'])
 
   class << self # overridden in test
     def data_root

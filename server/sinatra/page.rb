@@ -1,6 +1,6 @@
 require 'json'
 require File.expand_path("../random_id", __FILE__)
-require File.expand_path("../stores", __FILE__)
+require File.expand_path("../stores/all", __FILE__)
 
 class PageError < StandardError; end;
 

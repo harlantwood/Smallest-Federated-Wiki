@@ -1,5 +1,5 @@
 require File.dirname(__FILE__) + '/spec_helper'
-require File.dirname(__FILE__) + '/../server/sinatra/stores'
+require File.dirname(__FILE__) + '/../server/sinatra/stores/all'
 
 describe CouchStore do
   before do
