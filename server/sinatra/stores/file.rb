@@ -13,16 +13,12 @@ class FileStore < BaseStore
 
     def put_text(path, text, _)
       # Note: the third argument, metadata, is ignored for filesystem storage
-      File.open path, 'w' do |file|
-        file.write text
-      end
+      File.open(path, 'w'){ |file| file.write text }
       text
     end
 
     def put_blob(path, blob)
-      File.open path, 'wb' do |file|
-        file.write blob
-      end
+      File.open(path, 'wb'){ |file| file.write blob }
       blob
     end
 
