@@ -6,7 +6,7 @@ class CouchStore < BaseStore
     def db
       unless @db
         couchdb_server = ENV['COUCHDB_URL'] || raise('please set ENV["COUCHDB_URL"]')
-        @db = CouchRest.database!("#{couchdb_server}/SFW")
+        @db = CouchRest.database!("#{couchdb_server}/sfw")
         begin
           @db.save_doc "_id" => "_design/recent-changes", :views => {}
         rescue RestClient::Conflict
