@@ -24,7 +24,7 @@ class Controller < Sinatra::Base
 
   enable :sessions
 
-  @@store = Page.store = BaseStore.select(ENV['STORE_TYPE'])
+  @@store = Page.store = BaseStore.select(ENV['STORE_TYPE'], APP_ROOT)
 
   class << self # overridden in test
     def data_root

@@ -1,7 +1,11 @@
-require File.dirname(__FILE__) + '/spec_helper'
-require File.dirname(__FILE__) + '/../server/sinatra/stores/all'
+require File.dirname(__FILE__) + '/../spec_helper'
+require File.dirname(__FILE__) + '/../../server/sinatra/stores/all'
 
 describe CouchStore do
+  before :all do
+    CouchStore.app_root = ''
+  end
+
   before do
     @db = CouchStore.db = double()
     @couch_doc = double(:save => nil, :merge! => nil, :[]= => nil)

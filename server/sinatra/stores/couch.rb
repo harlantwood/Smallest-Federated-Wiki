@@ -21,6 +21,7 @@ class CouchStore < BaseStore
     ### GET
 
     def get_text(path)
+      path = relative(path)
       begin
         db.get(path)['data']
       rescue RestClient::ResourceNotFound
@@ -36,6 +37,7 @@ class CouchStore < BaseStore
     ### PUT
 
     def put_text(path, text, metadata={})
+      path = relative(path)
       attrs = {
         'data' => text,
         'updated_at' => Time.now.utc.iso8601
@@ -101,7 +103,12 @@ class CouchStore < BaseStore
     end
 
     def exists?(path)
-      !(get_text(path)).nil?
+      !(get_text path).nil?
+    end
+
+    def relative(path)
+      raise "Please set @app_root" unless @app_root
+      path.match(%r[^#{Regexp.escape @app_root}/?(.+?)$]) ? $1 : path
     end
 
   end
