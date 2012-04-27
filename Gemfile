@@ -10,6 +10,7 @@ gem "ZenTest", '<= 4.6.0'   # dependency of RubyInline, newer versions break Her
 gem "png"
 gem "rest-client"
 gem "ruby-openid"
+gem "couchrest"
 
 group :development do
   gem 'ruby-debug', :require => 'ruby-debug', :platform => :mri_18
