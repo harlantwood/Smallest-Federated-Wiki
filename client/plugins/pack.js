@@ -5,20 +5,20 @@
     bind: function(div, item) {},
     emit: function(div, item) {
       return wiki.getScript('/js/d3/d3.js', function() {
-        return wiki.getScript('/js/d3/d3.time.js', function() {
-          var format, height, pack, series, vis, width;
+        return wiki.getScript('/js/d3/d3.layout.js', function() {
+          var format, h, pack, series, vis, w;
           div.append('<style>\n  circle {\n    fill: rgb(31, 119, 180);\n    fill-opacity: .25;\n    stroke: rgb(31, 119, 180);\n    stroke-width: 1px;\n  }\n\n  .leaf circle {\n    fill: #ff7f0e;\n    fill-opacity: 1;\n  }\n\n  text {\n    font: 10px sans-serif;\n  }\n</style>');
           series = wiki.getData();
-          width = 960;
-          height = 960;
+          w = 960;
+          h = 960;
           format = d3.format(",d");
-          pack = d3.layout.pack().size([width - 4, height - 4]).value(function(d) {
+          pack = d3.layout.pack().size([w - 4, h - 4]).value(function(d) {
             return d.size;
           });
-          vis = d3.select("#chart").append("svg").attr("width", width).attr("height", height).attr("class", "pack").append("g").attr("transform", "translate(2, 2)");
+          vis = d3.select("#chart").append("svg:svg").attr("width", w).attr("height", h).attr("class", "pack").append("svg:g").attr("transform", "translate(2, 2)");
           return d3.json("../data/flare.json", function(json) {
             var node;
-            node = vis.data([json]).selectAll("g.node").data(pack.nodes).enter().append("g").attr("class", function(d) {
+            node = vis.data([json]).selectAll("g.node").data(pack.nodes).enter().append("svg:g").attr("class", function(d) {
               if (d.children) {
                 return "node";
               } else {
@@ -27,15 +27,15 @@
             }).attr("transform", function(d) {
               return "translate(" + d.x + "," + d.y + ")";
             });
-            node.append("title").text(function(d) {
+            node.append("svg:title").text(function(d) {
               return d.name + (d.children ? "" : ": " + format(d.size));
             });
-            node.append("circle").attr("r", function(d) {
+            node.append("svg:circle").attr("r", function(d) {
               return d.r;
             });
             return node.filter(function(d) {
               return !d.children;
-            }).append("text").attr("text-anchor", "middle").attr("dy", ".3em").text(function(d) {
+            }).append("svg:text").attr("text-anchor", "middle").attr("dy", ".3em").text(function(d) {
               return d.name.substring(0, d.r / 3);
             });
           });
