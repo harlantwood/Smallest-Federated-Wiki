@@ -1,0 +1,19 @@
+{
+  "title": "D3 Pack",
+  "story": [
+    {
+      "id": "40aca0157e6f8cf1",
+      "type": "pack"
+    },
+    {
+      "text": "This is the <i>pack</i> example from the [http://mbostock.github.com/d3/ d3]  distribution.  If you see an error above, don't panic, keep reading.",
+      "id": "85f2901bdbdced60",
+      "type": "paragraph"
+    },
+    {
+      "text": "We've modified the example to retrieve data from the page that contains it. We start by searching the page. Failing that, we search any other visible pages (soon). We'll be developing heuristics for best-fit of data when multiple sources are present.",
+      "id": "81d27d9b73b81dfb",
+      "type": "paragraph"
+    }
+  ]
+}
