@@ -119,6 +119,109 @@ describe "GET /welcome-visitors.json" do
   end
 end
 
+
+describe "GET /network-viz.json" do
+  #describe "JSON resource" do
+  #  before do
+  #    get "/network-viz.json"
+  #    @response = last_response
+  #    @body = last_response.body
+  #  end
+  #  it_behaves_like "GET to JSON resource"
+  #end
+
+  def create_viz_sample_page(site, slug, title)
+    page = {"title" => title, "story" => [{"type" => "paragraph", "text" => "Something awesome having to do with rhythm."}]}
+    pages_path = File.join TestDirs::TEST_DATA_DIR, 'farm', site, 'pages'
+    FileUtils.rm_f pages_path
+    FileUtils.mkdir_p pages_path
+    page_path = File.join pages_path, slug
+    File.open(page_path, 'w') { |file| file.write(page.to_json) }
+  end
+
+  context "the JSON" do
+    it "should be the expected viz-friendly data" do
+      create_viz_sample_page('poly.fed.noah.org', 'polyrhythm-for-polyglot-polymaths', "Polyrhythm for Polyglot Polymaths")
+      get "/network-viz.json"
+      @response = last_response
+      @response.status.should == 200
+      @body = last_response.body
+      @data = JSON.parse(@body)
+      @data.should == {
+        "name" => "farm",
+        "children" => [
+          {
+            "name" => "poly.fed.noah.org",
+            "children" => [
+              {
+                "name" => "Polyrhythm for Polyglot Polymaths",
+              }
+            ]
+          },
+
+        ]
+      }
+    end
+
+    it 'should display multiple pages' do
+      create_viz_sample_page('poly.fed.noah.org', 'polyrhythm-for-polyglot-polymaths', "Polyrhythm for Polyglot Polymaths")
+      create_viz_sample_page('poly.fed.noah.org', 'poly-202', "Poly 202")
+      get "/network-viz.json"
+      @response = last_response
+      @response.status.should == 200
+      @body = last_response.body
+      @data = JSON.parse(@body)
+      @data.should == {
+        "name" => "farm",
+        "children" => [
+          {
+            "name" => "poly.fed.noah.org",
+            "children" => [
+              {"name" => "Poly 202"},
+              {"name" => "Polyrhythm for Polyglot Polymaths"}
+            ]
+          },
+
+        ]
+      }
+    end
+
+    it 'should get pages from multiple sites' do
+      create_viz_sample_page('poly.fed.noah.org', 'polyrhythm-for-polyglot-polymaths', "Polyrhythm for Polyglot Polymaths")
+      create_viz_sample_page('geekskating.fed.noah.org', 'poly-202', "Poly 202")
+      get "/network-viz.json"
+      @response = last_response
+      @response unless @response.status == 200
+      @response.status.should == 200
+      @body = last_response.body
+      @data = JSON.parse(@body)
+      @data.should == {
+        "name" => "farm",
+        "children" => [
+          {
+            "name" => "geekskating.fed.noah.org",
+            "children" => [
+              {
+                "name" => "Poly 202",
+              }
+            ]
+          },
+          {
+            "name" => "poly.fed.noah.org",
+            "children" => [
+              {
+                "name" => "Polyrhythm for Polyglot Polymaths",
+              }
+            ]
+          },
+
+        ]
+      }
+    end
+  end
+
+end
+
 describe "GET /recent-changes.json" do
   def create_sample_page
     page = { "title" => "A Page", "story" => [ { "type" => "paragraph", "text" => "Hello test" } ] }

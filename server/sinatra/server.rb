@@ -1,3 +1,4 @@
+require 'awesome_print'
 require 'rubygems'
 require 'bundler'
 require 'pathname'
@@ -223,6 +224,27 @@ class Controller < Sinatra::Base
     page = {'title' => 'Recent Changes', 'story' => story}
     JSON.pretty_generate(page)
   end
+
+  get '/network-viz.json' do
+    content_type 'application/json'
+
+    farm = {"name" => "farm", "children" => []}
+    farm_dir = File.join(self.class.data_root, "farm")
+    Dir.chdir(farm_dir) do
+       Dir.glob("*") do |site|
+         site_hash = {"name" => site}
+         farm["children"] << site_hash
+         pages_dir = File.join(farm_dir, site,'pages')
+         Dir.chdir(pages_dir) do
+           pages = Store.recently_changed_pages pages_dir
+           site_hash['children'] = pages.map{|page| { 'name' => page['title'] } }
+         end
+       end
+    end
+
+    JSON.pretty_generate farm
+  end
+
 
   # get '/global-changes.json' do
   #   content_type 'application/json'
