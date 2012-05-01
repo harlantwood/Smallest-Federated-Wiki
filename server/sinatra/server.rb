@@ -8,6 +8,8 @@ $LOAD_PATH.unshift(File.dirname(__FILE__))
 SINATRA_ROOT = File.expand_path(File.dirname(__FILE__))
 APP_ROOT = File.expand_path(File.join(SINATRA_ROOT, "..", ".."))
 
+Encoding.default_external = Encoding::UTF_8
+
 require 'stores/all'
 require 'random_id'
 require 'page'
@@ -186,7 +188,7 @@ class Controller < Sinatra::Base
     haml :page, :locals => { :page => farm_page.get(name), :page_name => name }
   end
 
-  get %r{^((/[a-zA-Z0-9:.-]+/[a-z0-9-]+)+)$} do
+  get %r{^((/[a-zA-Z0-9:.-]+/[a-z0-9-]+(_rev\d+)?)+)$} do
     elements = params[:captures].first.split('/')
     pages = []
     elements.shift
@@ -285,7 +287,7 @@ class Controller < Sinatra::Base
   get %r{^/([a-z0-9-]+)\.json$} do |name|
     content_type 'application/json'
     cross_origin
-    halt 404 unless File.exists? "#{farm_page.directory}/#{name}" or File.exists? "#{farm_page.default_directory}/#{name}"
+    halt 404 unless Store.exists?("#{farm_page.directory}/#{name}") || Store.exists?("#{farm_page.default_directory}/#{name}")
     JSON.pretty_generate(farm_page.get(name))
   end
 
