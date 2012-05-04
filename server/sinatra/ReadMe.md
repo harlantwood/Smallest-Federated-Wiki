@@ -66,11 +66,11 @@ CouchDB
 =======
 
 By default, all pages, favicons, and server claims are stored in the server's local filesystem.
-If you'd prefer to use CouchDB for storage, you need to set two environment variables:
+If you prefer to use CouchDB for storage, set two environment variables:
 
 	STORE_TYPE=CouchStore
 	COUCHDB_URL=https://username:password@some-couchdb-host.com
 
-If you want to run a farm with CouchDB, you should also set this environment variable:
+If you want to run a farm with CouchDB, be sure to set the environment variable
 
 	FARM_MODE=true
