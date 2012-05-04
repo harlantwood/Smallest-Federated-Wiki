@@ -239,7 +239,7 @@ class Controller < Sinatra::Base
          pages_dir = File.join(farm_dir, site,'pages')
          Dir.chdir(pages_dir) do
            pages = Store.recently_changed_pages pages_dir
-           site_hash['children'] = pages.map{|page| { 'name' => page['title'] } }
+           site_hash['children'] = pages.map{|page| { 'name' => page['title'], 'size' => '1' } }
          end
        end
     end
