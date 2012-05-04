@@ -24,7 +24,7 @@ class Favicon
     end
 
     def Favicon.get_or_create(path)
-      Store.get_blob(path) || Store.put_blob(favicon, Favicon.create_blob)
+      Store.get_blob(path) || Store.put_blob(path, Favicon.create_blob)
     end
 
   end
