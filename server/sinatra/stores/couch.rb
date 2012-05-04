@@ -102,7 +102,7 @@ class CouchStore < Store
     end
 
     def farm?(_)
-      ENV['FARM_MODE'] && !ENV['FARM_MODE'].empty?
+      !!ENV['FARM_MODE']
     end
 
     def mkdir(_)
