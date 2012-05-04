@@ -33,22 +33,22 @@ class Controller < Sinatra::Base
     end
   end
 
-  def farm_page
+  def farm_page(site=request.host)
     page = Page.new
-    page.directory = File.join data_dir, "pages"
+    page.directory = File.join data_dir(site), "pages"
     page.default_directory = File.join APP_ROOT, "default-data", "pages"
     Store.mkdir page.directory
     page
   end
 
-  def farm_status
-    status = File.join data_dir, "status"
+  def farm_status(site=request.host)
+    status = File.join data_dir(site), "status"
     Store.mkdir status
     status
   end
 
-  def data_dir
-    Store.farm?(self.class.data_root) ? File.join(self.class.data_root, "farm", request.host) : self.class.data_root
+  def data_dir(site)
+    Store.farm?(self.class.data_root) ? File.join(self.class.data_root, "farm", site) : self.class.data_root
   end
 
   def identity
@@ -57,6 +57,11 @@ class Controller < Sinatra::Base
     id_data = Store.get_hash real_path
     id_data ||= Store.put_hash(real_path, FileStore.get_hash(default_path))
   end
+
+  def serve_resources_locally?(site)
+    ENV['SINGLE_THREADED_SERVER'] && Store.has_pages?(File.join data_dir(site), "pages")
+  end
+
 
   helpers do
     def cross_origin
@@ -154,8 +159,7 @@ class Controller < Sinatra::Base
   get '/favicon.png' do
     content_type 'image/png'
     cross_origin
-    local = File.join farm_status, 'favicon.png'
-    Store.get_blob(local) || Store.put_blob(local, Favicon.create_blob)
+    Favicon.get_or_create(File.join farm_status, 'favicon.png')
   end
 
   get '/random.png' do
@@ -206,7 +210,7 @@ class Controller < Sinatra::Base
     cross_origin
     bins = Hash.new {|hash, key| hash[key] = Array.new}
 
-    pages = Store.recently_changed_pages farm_page.directory
+    pages = Store.annotated_pages farm_page.directory
     pages.each do |page|
       dt = Time.now - page['updated_at']
       bins[(dt/=60)<1?'Minute':(dt/=60)<1?'Hour':(dt/=24)<1?'Day':(dt/=7)<1?'Week':(dt/=4)<1?'Month':(dt/=3)<1?'Season':(dt/=4)<1?'Year':'Forever']<<page
@@ -316,21 +320,31 @@ class Controller < Sinatra::Base
 
   get %r{^/remote/([a-zA-Z0-9:\.-]+)/([a-z0-9-]+)\.json$} do |site, name|
     content_type 'application/json'
-    RestClient.get "#{site}/#{name}.json" do |response, request, result, &block|
-      case response.code
-      when 200
-        response
-      when 404
-        halt 404
-      else
-        response.return!(request, result, &block)
+    host = site.split(':').first
+    if serve_resources_locally?(host)
+      JSON.pretty_generate farm_page(host).get(name)
+    else
+      RestClient.get "#{site}/#{name}.json" do |response, request, result, &block|
+        case response.code
+        when 200
+          response
+        when 404
+          halt 404
+        else
+          response.return!(request, result, &block)
+        end
       end
     end
   end
 
   get %r{^/remote/([a-zA-Z0-9:\.-]+)/favicon.png$} do |site|
     content_type 'image/png'
-    RestClient.get "#{site}/favicon.png"
+    host = site.split(':').first
+    if serve_resources_locally?(host)
+      Favicon.get_or_create(File.join farm_status(host), 'favicon.png')
+    else
+      RestClient.get "#{site}/favicon.png"
+    end
   end
 
 end
