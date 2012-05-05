@@ -9,11 +9,8 @@ class CouchStore < Store
       unless @db
         couchdb_server = ENV['COUCHDB_URL'] || raise('please set ENV["COUCHDB_URL"]')
         @db = CouchRest.database!("#{couchdb_server}/sfw")
-        begin
-          @db.save_doc "_id" => "_design/recent-changes", :views => {}
-        rescue RestClient::Conflict
-          # design document already exists, do nothing
-        end
+        @db.save_doc "_id" => "_design/pages",          :views => {}   rescue RestClient::Conflict
+        @db.save_doc "_id" => "_design/pages-with-dir", :views => {}   rescue RestClient::Conflict
       end
       @db
     end
@@ -61,12 +58,12 @@ class CouchStore < Store
 
     ### COLLECTIONS
 
-    def annotated_pages(pages_dir)
-      changes = pages pages_dir
-      changes.map do |change|
-        page = JSON.parse change['value']['data']
-        page.merge! 'updated_at' => Time.parse(change['value']['updated_at'])
-        page.merge! 'name' => change['value']['name']
+    def annotated_pages(pages_dir = nil)
+      pages(pages_dir).map do |page_doc|
+        page = JSON.parse page_doc['value']['data']
+        page.merge! 'updated_at' => Time.parse(page_doc['value']['updated_at'])
+        page.merge! 'name' => page_doc['value']['name']
+        page.merge! 'site' => page_doc['value']['site']
         page
       end
     end
@@ -78,14 +75,36 @@ class CouchStore < Store
     end
 
     def pages(pages_dir)
-      pages_dir = relative_path pages_dir
-      pages_dir_safe = CGI.escape pages_dir
-      begin
-        db.view("recent-changes/#{pages_dir_safe}")['rows']
-      rescue RestClient::ResourceNotFound
-        create_view 'recent-changes', pages_dir
-        db.view("recent-changes/#{pages_dir_safe}")['rows']
+      if pages_dir
+        pages_dir = relative_path pages_dir
+        pages_dir_safe = CGI.escape pages_dir
+        begin
+          db.view("pages/#{pages_dir_safe}")['rows']
+        rescue RestClient::ResourceNotFound
+          create_view 'pages-with-dir', pages_dir
+          db.view("pages-with-dir/#{pages_dir_safe}")['rows']
+        end
+      else
+        begin
+          db.view("pages/all")['rows']
+        rescue RestClient::ResourceNotFound
+          create_all_pages_view 'pages', 'all'
+          db.view("pages/all")['rows']
+        end
       end
+    end
+
+    def create_all_pages_view(design_name, view_name)
+      design = db.get "_design/#{design_name}"
+      design['views'][view_name] = {
+        :map => "
+          function(doc) {
+            if (doc.type == 'Page')
+              emit(doc._id, doc)
+          }
+        "
+      }
+      design.save
     end
 
     def create_view(design_name, view_name)
@@ -93,7 +112,7 @@ class CouchStore < Store
       design['views'][view_name] = {
         :map => "
           function(doc) {
-            if (doc.directory == '#{view_name}')
+            if (doc.type == 'Page' && doc.directory == '#{view_name}')
               emit(doc._id, doc)
           }
         "

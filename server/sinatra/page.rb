@@ -8,6 +8,8 @@ class PageError < StandardError; end;
 # Handles writing and reading JSON data to and from files.
 class Page
 
+    # Domain or subdomain containing this page.
+    attr_accessor :site
     # Directory where pages are to be stored.
     attr_accessor :directory
     # Directory where default (pre-existing) pages are stored.
@@ -43,7 +45,7 @@ class Page
     def put(name, page)
       assert_attributes_set
       path = File.join directory, name
-      Store.put_page(path, page, :name => name, :directory => directory)
+      Store.put_page(path, page, :type => 'Page', :name => name, :directory => directory, :site => site)
     end
 
     private
