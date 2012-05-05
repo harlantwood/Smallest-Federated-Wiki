@@ -227,7 +227,8 @@ class Controller < Sinatra::Base
     JSON.pretty_generate(page)
   end
 
-  get '/network-viz.json' do
+  get '/viz/curators.json' do
+    cross_origin
     content_type 'application/json'
 
     farm = {"name" => "farm", "children" => []}
