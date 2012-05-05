@@ -17,6 +17,8 @@ group :development do
   gem 'ruby-debug19', :require => 'ruby-debug19', :platform => :mri_19
   gem "foreman"
   gem "heroku"
+  gem 'shotgun'
+  gem 'awesome_print'
 end
 
 group :test do
