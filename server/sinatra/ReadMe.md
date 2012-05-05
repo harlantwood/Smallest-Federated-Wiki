@@ -53,7 +53,12 @@ or by setting the environment variable
 
 The server will create subdirectories with farm for each virtual host name and locate pages and status directories within that.
 
-The thin web server cannot handle recursive web requests that can happen with federated sites hosted in the same farm. Use webrick instead. Launch it with this command:
+Federated sites hosted in the same farm can cause recursive web requests.
+If you want to use the thin web server in farm mode, set the environment variable
+
+	SINGLE_THREADED_SERVER=true
+
+Alternately, you can use webrick, which handles recursive calls out of the box. Launch it with this command:
 
 	bundle exec rackup -s webrick -p 1111
 
@@ -61,11 +66,11 @@ CouchDB
 =======
 
 By default, all pages, favicons, and server claims are stored in the server's local filesystem.
-If you'd prefer to use CouchDB for storage, you need to set two environment variables:
+If you prefer to use CouchDB for storage, set two environment variables:
 
 	STORE_TYPE=CouchStore
 	COUCHDB_URL=https://username:password@some-couchdb-host.com
 
-If you want to run a farm with CouchDB, you should also set this environment variable:
+If you want to run a farm with CouchDB, be sure to set the environment variable
 
 	FARM_MODE=true
