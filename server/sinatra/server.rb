@@ -258,18 +258,20 @@ class Controller < Sinatra::Base
 
       collections_hashes = curator_hash['children']
       collection_hash = collections_hashes.find{ |collection_hash| collection_hash['name'] == collection_subdomain }
-      unless collection_hash
-        collection_hash = {"name" => collection_subdomain, "children" => []}
+      if collection_hash
+        collection_hash['size'] += 1
+      else
+        collection_hash = {"name" => collection_subdomain, "size" => 0}
         collections_hashes << collection_hash
       end
 
-      pages_hashes = collection_hash['children']
-      page_name = page['title']
-      page_hash = pages_hashes.find{ |page_hash| page_hash['name'] == page_name }
-      unless page_hash
-        page_hash = {"name" => page_name, "size" => 1}
-        pages_hashes << page_hash
-      end
+      #pages_hashes = collection_hash['children']
+      #page_name = page['title']
+      #page_hash = pages_hashes.find{ |page_hash| page_hash['name'] == page_name }
+      #unless page_hash
+      #  page_hash = {"name" => page_name, "size" => 1}
+      #  pages_hashes << page_hash
+      #end
     end
 
     JSON.pretty_generate curators
