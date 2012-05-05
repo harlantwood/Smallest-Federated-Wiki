@@ -240,9 +240,9 @@ class Controller < Sinatra::Base
        Dir.glob("*") do |site|
          site_hash = {"name" => site}
          farm["children"] << site_hash
-         pages_dir = File.join(farm_dir, site,'pages')
+         pages_dir = farm_page.directory
          Dir.chdir(pages_dir) do
-           pages = Store.recently_changed_pages pages_dir
+           pages = Store.annotated_pages pages_dir
            site_hash['children'] = pages.map{|page| { 'name' => page['title'], 'size' => '1' } }
          end
        end
