@@ -59,7 +59,7 @@ class Controller < Sinatra::Base
   end
 
   def serve_resources_locally?(site)
-    ENV['SINGLE_THREADED_SERVER'] && Store.has_pages?(File.join data_dir(site), "pages")
+    ENV['SINGLE_THREADED_SERVER'] && Store.has_pages?(farm_page(site).directory)
   end
 
 
