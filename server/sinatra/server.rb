@@ -243,7 +243,7 @@ class Controller < Sinatra::Base
     content_type 'application/json'
 
     curators_hashes = []
-    curators = {"name" => "Curators", "children" => curators_hashes}
+    curators = {"name" => "", "children" => curators_hashes}
     
     Store.annotated_pages.each do |page|
       next unless page['site'] && page['site'].match(/^#{settings.curator_collection_subdomain_pattern}\./)
@@ -261,7 +261,7 @@ class Controller < Sinatra::Base
       if collection_hash
         collection_hash['size'] += 1
       else
-        collection_hash = {"name" => collection_subdomain, "size" => 0}
+        collection_hash = {"name" => collection_subdomain, "size" => 1}
         collections_hashes << collection_hash
       end
 
