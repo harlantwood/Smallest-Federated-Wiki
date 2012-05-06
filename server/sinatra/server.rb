@@ -23,13 +23,6 @@ class Controller < Sinatra::Base
   set :views , File.join(SINATRA_ROOT, "views")
   set :haml, :format => :html5
   set :versions, `git log -10 --oneline` || "no git log"
-
-  set :minimum_subdomain_length, 8   # This is our application logic
-  set :maximum_subdomain_length, 63  # This is a hard limit set by internet standards
-  set :subdomain_pattern, "[a-z0-9][a-z0-9-]{#{settings.minimum_subdomain_length-1},#{settings.maximum_subdomain_length-1}}"
-  set :curator_subdomain_pattern,             "(#{settings.subdomain_pattern})"
-  set :curator_collection_subdomain_pattern,  "(#{settings.subdomain_pattern})\\.(#{settings.subdomain_pattern})"
-
   enable :sessions
 
   Store.set ENV['STORE_TYPE'], APP_ROOT
@@ -70,6 +63,15 @@ class Controller < Sinatra::Base
     ENV['SINGLE_THREADED_SERVER'] && Store.has_pages?(farm_page(site).directory)
   end
 
+  def freshness(updated_at)
+    seconds_since_updated = Time.now - updated_at
+    days_since_updated = seconds_since_updated / ( 60 * 60 * 24 )
+    freshness = [0, 365-days_since_updated].max
+    freshness /= 365                             # float between 0 - 1
+    favor_recent_changes_exponent = 20
+    freshness **= favor_recent_changes_exponent  # float between 0 - 1
+    freshness.round 3
+  end
 
   helpers do
     def cross_origin
@@ -238,43 +240,29 @@ class Controller < Sinatra::Base
     JSON.pretty_generate(page)
   end
 
-  get '/viz/curators.json' do
+  get '/viz/collections.json' do
     cross_origin
     content_type 'application/json'
 
-    curators_hashes = []
-    curators = {"name" => "", "children" => curators_hashes}
-    
+    collections = {"name" => "", "children" => []}
     Store.annotated_pages.each do |page|
-      next unless page['site'] && page['site'].match(/^#{settings.curator_collection_subdomain_pattern}\./)
-
-      collection_subdomain, curator_subdomain = $1, $2
-
-      curator_hash = curators_hashes.find{ |curator_hash| curator_hash['name'] == curator_subdomain }
-      unless curator_hash
-        curator_hash = {"name" => curator_subdomain, "children" => []}
-        curators_hashes << curator_hash
-      end
-
-      collections_hashes = curator_hash['children']
-      collection_hash = collections_hashes.find{ |collection_hash| collection_hash['name'] == collection_subdomain }
-      if collection_hash
-        collection_hash['size'] += 1
-      else
-        collection_hash = {"name" => collection_subdomain, "size" => 1}
+      collection_name = page['site'].split('.').first
+      collections_hashes = collections['children']
+      collection_hash = collections_hashes.find{ |collection_hash| collection_hash['name'] == collection_name }
+      unless collection_hash
+        collection_hash = {"name" => collection_name, "children" => []}
         collections_hashes << collection_hash
       end
 
-      #pages_hashes = collection_hash['children']
-      #page_name = page['title']
-      #page_hash = pages_hashes.find{ |page_hash| page_hash['name'] == page_name }
-      #unless page_hash
-      #  page_hash = {"name" => page_name, "size" => 1}
-      #  pages_hashes << page_hash
-      #end
+      pages_hashes = collection_hash['children']
+      page_hash = pages_hashes.find{ |page_hash| page_hash['name'] == page['title'] }
+      unless page_hash
+        page_hash = {"name" => page['title'], "size" => freshness(page['updated_at'])}
+        pages_hashes << page_hash
+      end
     end
 
-    JSON.pretty_generate curators
+    JSON.pretty_generate collections
   end
 
 
