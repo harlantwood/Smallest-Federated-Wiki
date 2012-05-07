@@ -61,7 +61,7 @@ class CouchStore < Store
     def annotated_pages(pages_dir = nil)
       pages(pages_dir).map do |page_doc|
         page = JSON.parse page_doc['value']['data']
-        page.merge! 'updated_at' => Time.parse(page_doc['value']['updated_at'])
+        page.merge! 'updated_at' => Time.parse(page_doc['value']['updated_at']) unless page['updated_at']
         page.merge! 'name' => page_doc['value']['name']
         page.merge! 'site' => page_doc['value']['site']
         page
