@@ -1,7 +1,7 @@
 {
-    "site": "fw.example.com",
-    "title": "New Simplest Federated Wiki Install",
-    "root": "welcome-visitors",
-    "owner": "example.com",
-    "launch": "1309112042"
+    "site": "sfw.openyourproject.org",
+    "title": "Open Your Project",
+    "root": "home",
+    "owner": "openyourproject.org",
+    "launch": "8325428495"
 }
