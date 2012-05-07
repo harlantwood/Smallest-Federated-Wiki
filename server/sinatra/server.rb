@@ -344,6 +344,8 @@ class Controller < Sinatra::Base
       page['story'][page['story'].index{ |item| item['id'] == action['id'] }] = action['item']
     when 'create'
       page['story'] ||= []
+    when 'merge'
+      page.merge! action['item'].clone
     else
       puts "unfamiliar action: #{action.inspect}"
       status 501
