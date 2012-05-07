@@ -251,8 +251,8 @@ class Controller < Sinatra::Base
 
     collections = {"name" => "", "children" => []}
     Store.annotated_pages.each do |page|
-      freshness_score = freshness page['updated_at']
-      if freshness_score > 0.1  # range is 0 - 1
+      #freshness_score = freshness page['updated_at']
+      #if freshness_score > 0.001  # range is 0 - 1
         collection_name = page['site'].split('.').first
         collections_hashes = collections['children']
         collection_hash = collections_hashes.find{ |collection_hash| collection_hash['name'] == collection_name }
@@ -264,10 +264,10 @@ class Controller < Sinatra::Base
         pages_hashes = collection_hash['children']
         page_hash = pages_hashes.find{ |page_hash| page_hash['name'] == page['title'] }
         unless page_hash
-          page_hash = {"name" => page['title'], "size" => freshness_score}
+          page_hash = {"name" => page['title'], "size" => 1}
           pages_hashes << page_hash
         end
-      end
+      #end
     end
 
     JSON.pretty_generate collections
