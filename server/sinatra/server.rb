@@ -65,12 +65,17 @@ class Controller < Sinatra::Base
 
   def freshness(updated_at)
     seconds_since_updated = Time.now - updated_at
+    return 0 if seconds_since_updated < 0    # updated in the future, which seems suspicious.  score = 0
     days_since_updated = seconds_since_updated / ( 60 * 60 * 24 )
-    freshness = [0, 365-days_since_updated].max
-    freshness /= 365                             # float between 0 - 1
+    score = [0, 365-days_since_updated].max  # 0 - 365
+    score /= 365                             # 0 - 1
     favor_recent_changes_exponent = 20
-    freshness **= favor_recent_changes_exponent  # float between 0 - 1
-    freshness.round 3
+    score **= favor_recent_changes_exponent  # 0 - 1, more recent weighted
+    score.round 4
+  end
+
+  def claimed_site_is_not_mine?
+    claimed? && !authenticated?
   end
 
   helpers do
@@ -246,19 +251,22 @@ class Controller < Sinatra::Base
 
     collections = {"name" => "", "children" => []}
     Store.annotated_pages.each do |page|
-      collection_name = page['site'].split('.').first
-      collections_hashes = collections['children']
-      collection_hash = collections_hashes.find{ |collection_hash| collection_hash['name'] == collection_name }
-      unless collection_hash
-        collection_hash = {"name" => collection_name, "children" => []}
-        collections_hashes << collection_hash
-      end
+      freshness_score = freshness page['updated_at']
+      if freshness_score > 0.1  # range is 0 - 1
+        collection_name = page['site'].split('.').first
+        collections_hashes = collections['children']
+        collection_hash = collections_hashes.find{ |collection_hash| collection_hash['name'] == collection_name }
+        unless collection_hash
+          collection_hash = {"name" => collection_name, "children" => []}
+          collections_hashes << collection_hash
+        end
 
-      pages_hashes = collection_hash['children']
-      page_hash = pages_hashes.find{ |page_hash| page_hash['name'] == page['title'] }
-      unless page_hash
-        page_hash = {"name" => page['title'], "size" => freshness(page['updated_at'])}
-        pages_hashes << page_hash
+        pages_hashes = collection_hash['children']
+        page_hash = pages_hashes.find{ |page_hash| page_hash['name'] == page['title'] }
+        unless page_hash
+          page_hash = {"name" => page['title'], "size" => freshness_score}
+          pages_hashes << page_hash
+        end
       end
     end
 
@@ -314,7 +322,7 @@ class Controller < Sinatra::Base
   end
 
   put %r{^/page/([a-z0-9-]+)/action$} do |name|
-    unless authenticated? or !claimed?
+    if claimed_site_is_not_mine?
       halt 403
       return
     end
