@@ -56,7 +56,7 @@ class CouchStore < Store
 
     ### COLLECTIONS
 
-    def page_metadata
+    def page_metadata(_)
       pages = begin
         db.view("pages-metadata/all")['rows']
       rescue RestClient::ResourceNotFound

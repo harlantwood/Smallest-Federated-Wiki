@@ -24,6 +24,22 @@ class FileStore < Store
 
     ### COLLECTIONS
 
+    def page_metadata(farm_dir)
+      Dir.chdir(farm_dir) do
+        Dir.glob("*").collect do |site|
+          Dir.chdir("#{site}/pages") do
+            Dir.glob("*").collect do |name|
+              {
+                'name' => name,
+                'site' => site,
+                #'updated_at' => File.new(name).mtime   # not in use
+              }
+            end
+          end
+        end
+      end.flatten
+    end
+
     def annotated_pages(pages_dir)
       Dir.chdir(pages_dir) do
         Dir.glob("*").collect do |name|

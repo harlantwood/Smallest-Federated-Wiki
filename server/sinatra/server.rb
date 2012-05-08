@@ -2,6 +2,7 @@ require 'rubygems'
 require 'bundler'
 require 'pathname'
 Bundler.require
+require 'awesome_print' if ENV['RACK_ENV'] == 'development'
 
 $LOAD_PATH.unshift(File.dirname(__FILE__))
 SINATRA_ROOT = File.expand_path(File.dirname(__FILE__))
@@ -250,7 +251,8 @@ class Controller < Sinatra::Base
     content_type 'application/json'
 
     collections = {"name" => "", "children" => []}
-    Store.page_metadata.each do |page|
+    farm_dir = File.join self.class.data_root, "farm"
+    Store.page_metadata(farm_dir).each do |page|
       #freshness_score = freshness page['updated_at']
       #if freshness_score > 0.001  # range is 0 - 1
         collection_name = page['site'].gsub(/(www|en)\./, '').split('.').first
