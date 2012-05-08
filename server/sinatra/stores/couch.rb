@@ -9,8 +9,6 @@ class CouchStore < Store
       unless @db
         couchdb_server = ENV['COUCHDB_URL'] || raise('please set ENV["COUCHDB_URL"]')
         @db = CouchRest.database!("#{couchdb_server}/sfw")
-        @db.save_doc "_id" => "_design/pages",          :views => {}   rescue RestClient::Conflict
-        @db.save_doc "_id" => "_design/pages-with-dir", :views => {}   rescue RestClient::Conflict
       end
       @db
     end
@@ -58,49 +56,53 @@ class CouchStore < Store
 
     ### COLLECTIONS
 
-    def annotated_pages(pages_dir = nil)
+    def page_metadata
+      pages = begin
+        db.view("pages-metadata/all")['rows']
+      rescue RestClient::ResourceNotFound
+        create_metadata_view 'pages-metadata', 'all'
+        db.view("pages-metadata/all")['rows']
+      end
+
+      pages.map do |page_doc|
+        {
+          'updated_at' => Time.parse(page_doc['value'][0]),
+          'site' => page_doc['value'][1],
+          'name' => page_doc['value'][2]
+        }
+      end
+    end
+
+    def annotated_pages(pages_dir = nil, options={})
       pages(pages_dir).map do |page_doc|
-        page = JSON.parse page_doc['value']['data']
-        page['updated_at'] = Time.parse(page['updated_at'] || page_doc['value']['updated_at'])
-        page.merge! 'name' => page_doc['value']['name']
-        page.merge! 'site' => page_doc['value']['site']
+        page = options[:skip_body] ? {} : JSON.parse(page_doc['value']['data'])
+        page['updated_at'] = Time.parse(page['updated_at'] || page_doc['value'][0] || page_doc['value']['updated_at'] )
+        page.merge! 'site' => page_doc['value'][1] || page_doc['value']['site']
+        page.merge! 'name' => page_doc['value'][2] || page_doc['value']['name']
         page
       end
     end
 
-    ### UTILITY
-
-    def has_pages?(pages_dir)
-      !pages(pages_dir).empty?
-    end
-
     def pages(pages_dir)
-      if pages_dir
-        pages_dir = relative_path pages_dir
-        pages_dir_safe = CGI.escape pages_dir
-        begin
-          db.view("pages/#{pages_dir_safe}")['rows']
-        rescue RestClient::ResourceNotFound
-          create_view 'pages-with-dir', pages_dir
-          db.view("pages-with-dir/#{pages_dir_safe}")['rows']
-        end
-      else
-        begin
-          db.view("pages/all")['rows']
-        rescue RestClient::ResourceNotFound
-          create_all_pages_view 'pages', 'all'
-          db.view("pages/all")['rows']
-        end
+      pages_dir = relative_path pages_dir
+      pages_dir_safe = CGI.escape pages_dir
+      begin
+        db.view("pages/#{pages_dir_safe}")['rows']
+      rescue RestClient::ResourceNotFound
+        create_view 'pages-with-dir', pages_dir
+        db.view("pages-with-dir/#{pages_dir_safe}")['rows']
       end
     end
 
-    def create_all_pages_view(design_name, view_name)
-      design = db.get "_design/#{design_name}"
+    ### VIEWS
+
+    def create_metadata_view(design_name, view_name)
+      design = get_or_create_design design_name
       design['views'][view_name] = {
         :map => "
           function(doc) {
             if (doc.type == 'Page')
-              emit(doc._id, doc)
+              emit(doc._id, [doc.updated_at, doc.site, doc.name])
           }
         "
       }
@@ -108,7 +110,7 @@ class CouchStore < Store
     end
 
     def create_view(design_name, view_name)
-      design = db.get "_design/#{design_name}"
+      design = get_or_create_design design_name
       design['views'][view_name] = {
         :map => "
           function(doc) {
@@ -119,6 +121,21 @@ class CouchStore < Store
       }
       design.save
     end
+
+    def get_or_create_design(design_name)
+      begin
+        db.get "_design/#{design_name}"
+      rescue RestClient::ResourceNotFound
+        begin
+          @db.save_doc "_id" => "_design/#{design_name}", :views => {}
+        rescue RestClient::Conflict
+          # don't explode in the case that another thread has created this design document at the same time
+        end
+        db.get "_design/#{design_name}"
+      end
+    end
+
+    ### UTILITY
 
     def farm?(_)
       !!ENV['FARM_MODE']
