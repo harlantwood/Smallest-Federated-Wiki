@@ -11,6 +11,7 @@ gem "png"
 gem "rest-client"
 gem "ruby-openid"
 gem "couchrest"
+gem 'awesome_print'
 
 group :development do
   gem 'ruby-debug', :require => 'ruby-debug', :platform => :mri_18
@@ -18,7 +19,6 @@ group :development do
   gem "foreman"
   gem "heroku"
   gem 'shotgun'
-  gem 'awesome_print'
 end
 
 group :test do
