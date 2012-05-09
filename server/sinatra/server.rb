@@ -259,7 +259,8 @@ class Controller < Sinatra::Base
         collections_hashes = collections['children']
         collection_hash = collections_hashes.find{ |collection_hash| collection_hash['name'] == collection_name }
         unless collection_hash
-          collection_hash = {"name" => collection_name, "children" => []}
+          url = "http://#{page['site']}" + (request.port == 80 ? '' : ":#{request.port}")
+          collection_hash = {"name" => collection_name, "url" => url, "children" => []}
           collections_hashes << collection_hash
         end
 
