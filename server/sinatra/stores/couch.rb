@@ -56,7 +56,7 @@ class CouchStore < Store
 
     ### COLLECTIONS
 
-    def page_metadata(_)
+    def page_metadata(_, max_pages)
       pages = begin
         db.view("pages-metadata/all")['rows']
       rescue RestClient::ResourceNotFound
@@ -64,13 +64,15 @@ class CouchStore < Store
         db.view("pages-metadata/all")['rows']
       end
 
-      pages.map do |page_doc|
+      data = pages.map do |page_doc|
         {
           'updated_at' => Time.parse(page_doc['value'][0]),
           'site' => page_doc['value'][1],
           'name' => page_doc['value'][2]
         }
       end
+
+      data[0...max_pages]
     end
 
     def annotated_pages(pages_dir = nil, options={})
