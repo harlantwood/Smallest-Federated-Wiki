@@ -1105,16 +1105,20 @@ require.define("/lib/refresh.coffee", function (require, module, exports, __dirn
   };
 
   emitHeader = function(pageElement, page) {
-    var site;
+    var date, rev, site;
     site = $(pageElement).data('site');
     if (site != null) {
-      return $(pageElement).append("<h1><a href=\"//" + site + "\"><img src = \"/remote/" + site + "/favicon.png\" height = \"32px\"></a> " + page.title + "</h1>");
+      $(pageElement).append("<h1><a href=\"//" + site + "\"><img src = \"/remote/" + site + "/favicon.png\" height = \"32px\"></a> " + page.title + "</h1>");
     } else {
-      return $(pageElement).append($("<h1 />").append($("<a />").attr('href', '/').append($("<img>").error(function(e) {
+      $(pageElement).append($("<h1 />").append($("<a />").attr('href', '/').append($("<img>").error(function(e) {
         return plugin.get('favicon', function(favicon) {
           return favicon.create();
         });
       }).attr('class', 'favicon').attr('src', '/favicon.png').attr('height', '32px')), " " + page.title));
+    }
+    if ((rev = pageElement.attr('id').split('_rev')[1]) != null) {
+      date = page.journal[page.journal.length - 1].date;
+      return $(pageElement).append($('<h4 class="revision"/>').html(date != null ? util.formatDate(date) : "Revision " + rev));
     }
   };
 

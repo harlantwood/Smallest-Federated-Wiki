@@ -67,6 +67,11 @@ emitHeader = (pageElement, page) ->
               .attr('src', '/favicon.png')
               .attr('height', '32px')
           ), " #{page.title}"))
+  if (rev = pageElement.attr('id').split('_rev')[1])?
+    date = page.journal[page.journal.length-1].date
+    $(pageElement)
+      .append $('<h4 class="revision"/>')
+        .html if date? then util.formatDate(date) else "Revision #{rev}"
 
 module.exports = refresh = wiki.refresh = ->
   pageElement = $(this)

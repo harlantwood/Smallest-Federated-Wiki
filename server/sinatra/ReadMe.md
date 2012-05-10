@@ -53,10 +53,23 @@ or by setting the environment variable
 
 The server will create subdirectories with farm for each virtual host name and locate pages and status directories within that.
 
-Federated sites hosted in the same farm can cause recursive web requests.
-If you want to use the thin web server in farm mode, set the environment variable
+Recursive Server Calls
+======================
 
-	SINGLE_THREADED_SERVER=true
+Federated sites hosted in the same farm can cause recursive web requests.
+This is an issue for certain rack servers, notably thin, which is widely used in production rack setups.
+If you have a standard server configuration, in which all traffic coming to *.my-sfw-farm.org will be handled by
+a single server, you can serve page json and favicons in the context of the current request
+(instead of generating an additional HTTP request)
+by setting the environment variable:
+
+	FARM_DOMAINS=my-sfw-farm.org
+
+Your server can handle multiple domains by comma-separating them:
+
+	FARM_DOMAINS=my-sfw-farm.org,fedwiki.jacksmith.com
+
+With this setup, pages and favicons will be served more efficiently, as well as being friendly to single-threaded servers like thin.
 
 Alternately, you can use webrick, which handles recursive calls out of the box. Launch it with this command:
 

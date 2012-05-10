@@ -10,6 +10,7 @@ APP_ROOT = File.expand_path(File.join(SINATRA_ROOT, "..", ".."))
 
 Encoding.default_external = Encoding::UTF_8
 
+require 'server_helpers'
 require 'stores/all'
 require 'random_id'
 require 'page'
@@ -25,6 +26,7 @@ class Controller < Sinatra::Base
   set :haml, :format => :html5
   set :versions, `git log -10 --oneline` || "no git log"
   enable :sessions
+  helpers ServerHelpers
 
   Store.set ENV['STORE_TYPE'], APP_ROOT
 
@@ -36,9 +38,9 @@ class Controller < Sinatra::Base
 
   def farm_page(site=request.host)
     page = Page.new
-    page.site = site
     page.directory = File.join data_dir(site), "pages"
     page.default_directory = File.join APP_ROOT, "default-data", "pages"
+    page.plugins_directory = File.join APP_ROOT, "client", "plugins"
     Store.mkdir page.directory
     page
   end
@@ -60,10 +62,6 @@ class Controller < Sinatra::Base
     id_data ||= Store.put_hash(real_path, FileStore.get_hash(default_path))
   end
 
-  def serve_resources_locally?(site)
-    ENV['SINGLE_THREADED_SERVER'] && Store.has_pages?(farm_page(site).directory)
-  end
-
   def freshness(updated_at)
     seconds_since_updated = Time.now - updated_at
     return 0 if seconds_since_updated < 0    # updated in the future, which seems suspicious.  score = 0
@@ -77,47 +75,6 @@ class Controller < Sinatra::Base
 
   def claimed_site_is_not_mine?
     claimed? && !authenticated?
-  end
-
-  helpers do
-    def cross_origin
-      headers 'Access-Control-Allow-Origin' => "*" if request.env['HTTP_ORIGIN']
-    end
-
-    def resolve_links string
-      string.
-        gsub(/\[\[([^\]]+)\]\]/i) {
-                    |name|
-                    name.gsub!(/^\[\[(.*)\]\]/, '\1')
-
-                    slug = name.gsub(/\s/, '-')
-                    slug = slug.gsub(/[^A-Za-z0-9-]/, '').downcase
-                    '<a class="internal" href="/'+slug+'.html" data-page-name="'+slug+'">'+name+'</a>'
-                }.
-        gsub(/\[(http.*?) (.*?)\]/i, '<a class="external" href="\1">\2</a>')
-    end
-
-    def openid_consumer
-      @openid_consumer ||= OpenID::Consumer.new(session, OpenID::Store::Filesystem.new("#{farm_status}/tmp/openid"))
-    end
-
-    def authenticated?
-      session[:authenticated] == true
-    end
-
-    def claimed?
-      Store.exists? "#{farm_status}/open_id.identity"
-    end
-
-    def authenticate!
-      session[:authenticated] = true
-      redirect "/"
-    end
-
-    def oops status, message
-      haml :oops, :layout => false, :locals => {:status => status, :message => message}
-    end
-
   end
 
   post "/logout" do
@@ -315,9 +272,7 @@ class Controller < Sinatra::Base
 
   get %r{^/([a-z0-9-]+)\.json$} do |name|
     content_type 'application/json'
-    cross_origin
-    halt 404 unless Store.exists?("#{farm_page.directory}/#{name}") || File.exists?("#{farm_page.default_directory}/#{name}")
-    JSON.pretty_generate(farm_page.get(name))
+    serve_page name
   end
 
   error 403 do
@@ -371,7 +326,7 @@ class Controller < Sinatra::Base
     content_type 'application/json'
     host = site.split(':').first
     if serve_resources_locally?(host)
-      JSON.pretty_generate farm_page(host).get(name)
+      serve_page(name, host)
     else
       RestClient.get "#{site}/#{name}.json" do |response, request, result, &block|
         case response.code

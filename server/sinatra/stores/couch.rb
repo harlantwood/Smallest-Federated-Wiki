@@ -85,17 +85,6 @@ class CouchStore < Store
       end
     end
 
-    def pages(pages_dir)
-      pages_dir = relative_path pages_dir
-      pages_dir_safe = CGI.escape pages_dir
-      begin
-        db.view("pages/#{pages_dir_safe}")['rows']
-      rescue RestClient::ResourceNotFound
-        create_view 'pages-with-dir', pages_dir
-        db.view("pages-with-dir/#{pages_dir_safe}")['rows']
-      end
-    end
-
     ### VIEWS
 
     def create_metadata_view(design_name, view_name)
@@ -109,6 +98,17 @@ class CouchStore < Store
         "
       }
       design.save
+    end
+
+    def pages(pages_dir)
+      pages_dir = relative_path pages_dir
+      pages_dir_safe = CGI.escape pages_dir
+      begin
+        db.view("pages/#{pages_dir_safe}")['rows']
+      rescue RestClient::ResourceNotFound
+        create_view 'pages-with-dir', pages_dir
+        db.view("pages-with-dir/#{pages_dir_safe}")['rows']
+      end
     end
 
     def create_view(design_name, view_name)
@@ -125,6 +125,7 @@ class CouchStore < Store
     end
 
     def get_or_create_design(design_name)
+      # TODO: if we are in dev mode, always update views -- otherwise view changes never get pushed!
       begin
         db.get "_design/#{design_name}"
       rescue RestClient::ResourceNotFound
