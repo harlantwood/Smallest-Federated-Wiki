@@ -30,6 +30,10 @@ class Controller < Sinatra::Base
   else
     enable :sessions
   end
+
+  enable :logging, :dump_errors, :raise_errors
+  set :show_exceptions, true if development?
+
   helpers ServerHelpers
 
   Store.set ENV['STORE_TYPE'], APP_ROOT
@@ -38,6 +42,10 @@ class Controller < Sinatra::Base
     def data_root
       File.join APP_ROOT, "data"
     end
+  end
+
+  def development?
+    ENV['RACK_ENV'] == 'development'
   end
 
   def farm_page(site=request.host)
