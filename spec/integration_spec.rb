@@ -14,10 +14,11 @@ describe "loading a page" do
   end
 
   it "should copy welcome-visitors from the default-data to data" do
-    File.exist?(File.join(TestDirs::TEST_DATA_DIR, "pages/welcome-visitors")).should == false
+    root_page_name = JSON.parse(File.read(File.join APP_ROOT, "default-data", "status", "local-identity"))['root']
+    File.exist?(File.join(TestDirs::TEST_DATA_DIR, "pages/#{root_page_name}")).should == false
     visit("/")
     body.should include("Welcome Visitors")
-    File.exist?(File.join(TestDirs::TEST_DATA_DIR, "pages/welcome-visitors")).should == true
+    File.exist?(File.join(TestDirs::TEST_DATA_DIR, "pages/#{root_page_name}")).should == true
   end
 
   it "should load multiple pages at once" do
