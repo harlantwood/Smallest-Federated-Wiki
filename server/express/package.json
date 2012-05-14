@@ -17,12 +17,13 @@
     "bouncy": "~1.1"
   },
   "scripts": {
-    "test": "./node_modules/mocha/bin/mocha"
+    "test": "./node_modules/mocha/bin/mocha",
+    "start": "./bin/server.js"
   },
   "devDependencies": {
     "docco": "~0.3",
-    "mocha": "~0.10",
-    "should": "~0.5"
+    "mocha": "*",
+    "should": "*"
   },
   "engines": { 
     "node": "~0.6" 
