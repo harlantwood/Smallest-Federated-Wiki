@@ -31,4 +31,5 @@ group :test do
   gem 'capybara'
   gem 'launchy'
   gem 'selenium-webdriver', '2.19.0'
+  gem 'fuubar'
 end
