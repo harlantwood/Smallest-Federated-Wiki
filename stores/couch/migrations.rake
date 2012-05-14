@@ -6,14 +6,23 @@
 # Don't describe migrations (with the rake 'desc' thing) individually
 # so they don't show up in rake -T
 #
+# Running: foreman run rake couch:migrate --trace
 
-namespace :migrations do
-  # Note: this is just a sample; for changes this trivial, you should just
-  # create a CouchRest property with a default value instead.
-  task "001 Do Something Exciting" do
-    MyClass.all.each do |obj|
-      obj["excitement_level"] = 100
-      obj.save
+namespace :couch do
+
+  namespace :migrations do
+    task "001 create_metadata_view" do
+      design = CouchStore.get_or_create_design 'pages-metadata'
+      design['views']['all'] = {
+        :map => "
+            function(doc) {
+              if (doc.type == 'Page')
+                emit(doc._id, [doc.updated_at, doc.site, doc.name])
+            }
+          "
+      }
+      design.save
     end
   end
+
 end

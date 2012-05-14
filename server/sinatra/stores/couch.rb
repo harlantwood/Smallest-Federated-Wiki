@@ -1,4 +1,8 @@
 require 'time'  # for Time#iso8601
+require "rest-client"
+require "couchrest"
+
+require File.expand_path("store.rb", File.dirname(__FILE__))
 
 class CouchStore < Store
   class << self
@@ -57,12 +61,7 @@ class CouchStore < Store
     ### COLLECTIONS
 
     def page_metadata(_, max_pages)
-      pages = begin
-        db.view("pages-metadata/all")['rows']
-      rescue RestClient::ResourceNotFound
-        create_metadata_view 'pages-metadata', 'all'
-        db.view("pages-metadata/all")['rows']
-      end
+      pages = db.view("pages-metadata/all")['rows']
 
       data = pages.map do |page_doc|
         {
@@ -78,27 +77,14 @@ class CouchStore < Store
     def annotated_pages(pages_dir = nil, options={})
       pages(pages_dir).map do |page_doc|
         page = options[:skip_body] ? {} : JSON.parse(page_doc['value']['data'])
-        page['updated_at'] = Time.parse(page['updated_at'] || page_doc['value'][0] || page_doc['value']['updated_at'] )
-        page.merge! 'site' => page_doc['value'][1] || page_doc['value']['site']
-        page.merge! 'name' => page_doc['value'][2] || page_doc['value']['name']
+        page['updated_at'] = Time.parse(page['updated_at'] || page_doc['value']['updated_at'] )
+        page.merge! 'site' => page_doc['value']['site']
+        page.merge! 'name' => page_doc['value']['name']
         page
       end
     end
 
     ### VIEWS
-
-    def create_metadata_view(design_name, view_name)
-      design = get_or_create_design design_name
-      design['views'][view_name] = {
-        :map => "
-          function(doc) {
-            if (doc.type == 'Page')
-              emit(doc._id, [doc.updated_at, doc.site, doc.name])
-          }
-        "
-      }
-      design.save
-    end
 
     def pages(pages_dir)
       pages_dir = relative_path pages_dir

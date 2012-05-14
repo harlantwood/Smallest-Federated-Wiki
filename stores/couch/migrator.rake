@@ -1,29 +1,30 @@
 # Originally from http://tumble.mlcastle.net/post/17704454324/a-lightweight-migrations-system-for-couchrestrails
 
-desc "Perform unperformed CouchDB migrations"
-task :migrate => :environment do
-  schema = begin
-    CouchRestRails::Document.get("migration-list")
-  rescue RestClient::ResourceNotFound
-    CouchRestRails::Document.new(:_id => "migration-list")
-  end
+require File.expand_path("../../server/sinatra/stores/couch.rb", File.dirname(__FILE__))
 
-  # there HAS to be a better way to get all the tasks in a namespace, but
-  # I can't find one.
-  migrations = Rake::Task.tasks.select { |t| t.name =~ /^migrations:/ }
+namespace :couch do
 
-  begin
-    migrations.sort { |a, b| a.name <=> b.name }.each do |migration|
-      unless schema[migration.to_s]
-        puts
-        puts "== running #{migration.to_s}"
+  desc "Perform unperformed CouchDB migrations"
+  # Run with foreman, eg ::: foreman run rake couch:migrate --trace
+  task :migrate do
+    schema = CouchStore.get_or_create_design("migration-list")
 
-        migration.invoke
+    migrations = Rake::Task.tasks.select { |t| t.name =~ /^couch:migrations:/ }
 
-        schema[migration.to_s] = true
+    begin
+      migrations.sort { |a, b| a.name <=> b.name }.each do |migration|
+        unless schema[migration.to_s]
+          puts
+          puts "== running #{migration.to_s}"
+
+          migration.invoke
+
+          schema[migration.to_s] = true
+        end
       end
+    ensure
+      schema.save
     end
-  ensure
-    schema.save
   end
+
 end
