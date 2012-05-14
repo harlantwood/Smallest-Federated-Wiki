@@ -66,6 +66,14 @@ $ ->
       .replace(/\[\[([^\]]+)\]\]/gi, renderInternalLink)
       .replace(/\[(http.*?) (.*?)\]/gi, "<a class=\"external\" target=\"_blank\" href=\"$1\">$2</a>")
 
+  wiki.symbols =
+    create: '☼'
+    add: '+'
+    edit: '✎'
+    fork: '⚑'
+    move: '↕'
+    remove: '✕'
+
   addToJournal = wiki.addToJournal = (journalElement, action) ->
     pageElement = journalElement.parents('.page:first')
     prev = journalElement.find(".edit[data-id=#{action.id || 0}]") if action.type == 'edit'
@@ -73,10 +81,15 @@ $ ->
     actionTitle += "(#{prev.length})" if action.type == 'edit'
     actionTitle += ": #{util.formatDate(action.date)}" if action.date?
     actionElement = $("<a href=\"\#\" /> ").addClass("action").addClass(action.type)
-      .text(action.type[0])
+      .text(wiki.symbols[action.type])
       .attr('title',actionTitle)
       .attr('data-id', action.id || "0")
-      .appendTo(journalElement)
+      .data('action', action)
+    controls = journalElement.children('.control-buttons')
+    if controls.length > 0
+      actionElement.insertBefore(controls)
+    else
+      actionElement.appendTo(journalElement)
     if action.type == 'fork'
       actionElement
         .css("background-image", "url(//#{action.site}/favicon.png)")
@@ -196,7 +209,10 @@ $ ->
       finishClick e, name
 
     .delegate '.action', 'click', (e) ->
+      e.preventDefault()
       element = $(e.target)
+      if e.shiftKey
+        return wiki.dialog "#{element.data('action').type} action", $('<pre/>').text(JSON.stringify(element.data('action'), null, 2))
       if element.is('.fork')
         name = $(e.target).data('slug')
         pageHandler.context = [$(e.target).data('site')]
@@ -214,6 +230,10 @@ $ ->
           .each refresh
         active.set($('.page').last())
 
+    .delegate '.fork-page', 'click', (e) ->
+      pageElement = $(e.target).parents('.page')
+      return unless (remoteSite = pageElement.data('site'))?
+      pageHandler.put pageElement, {type:'fork', site: remoteSite}
 
     .delegate '.action', 'hover', ->
       id = $(this).attr('data-id')
