@@ -34,6 +34,15 @@ describe 'Server helpers' do
       end
     end
 
+    context 'wikilinks with friendly labels' do
+      it "should convert to HTML links" do
+        helpers.resolve_links('[[My Page|Click Here]]').should == '<a class="internal" href="/my-page.html" data-page-name="my-page">Click Here</a>'
+      end
+
+      it "should convert links with more than 2 parts using the last segments" do
+        helpers.resolve_links('[[My Page|Is Great|Click Here]]').should == '<a class="internal" href="/is-great.html" data-page-name="is-great">Click Here</a>'
+      end
+    end
   end
 
   describe "#serve_resources_locally?" do

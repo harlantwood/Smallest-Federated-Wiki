@@ -9,10 +9,12 @@ module ServerHelpers
       gsub(/\[\[([^\]]+)\]\]/i) {
                   |name|
                   name.gsub!(/^\[\[(.*)\]\]/, '\1')
-
-                  slug = name.gsub(/\s/, '-')
+                  parts = name.split('|')
+                  link_label = parts[-1]
+                  page_title = parts[-2] || parts[-1]
+                  slug = page_title.gsub(/\s/, '-')
                   slug = slug.gsub(/[^A-Za-z0-9-]/, '').downcase
-                  '<a class="internal" href="/'+slug+'.html" data-page-name="'+slug+'">'+name+'</a>'
+                  '<a class="internal" href="/'+slug+'.html" data-page-name="'+slug+'">'+link_label+'</a>'
               }.
       gsub(/\[(http.*?) (.*?)\]/i, '<a class="external" href="\1">\2</a>')
   end
