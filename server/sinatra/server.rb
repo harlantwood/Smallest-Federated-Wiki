@@ -71,7 +71,7 @@ class Controller < Sinatra::Base
     return 0 if seconds_since_updated < 0    # updated in the future, which seems suspicious.  score = 0
     days_since_updated = seconds_since_updated / ( 60 * 60 * 24 )
     score = [0, 365-days_since_updated].max  # 0 - 365
-    score /= 365                             # 0 - 1
+    score /= 365.0                           # 0 - 1
     favor_recent_changes_exponent = 20
     score **= favor_recent_changes_exponent  # 0 - 1, more recent weighted
     score.round 4
