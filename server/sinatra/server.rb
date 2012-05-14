@@ -71,8 +71,7 @@ class Controller < Sinatra::Base
   def identity
     default_path = File.join APP_ROOT, "default-data", "status", "local-identity"
     real_path = File.join farm_status, "local-identity"
-    id_data = Store.get_hash real_path
-    id_data ||= Store.put_hash(real_path, FileStore.get_hash(default_path))
+    Store.get_hash(real_path) || Store.put_hash(real_path, FileStore.get_hash(default_path))
   end
 
   def freshness(updated_at)
