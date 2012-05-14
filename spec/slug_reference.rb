@@ -1,3 +1,5 @@
+# encoding: UTF-8
+
 def asSlug (name)
   name.gsub(/\s/, '-').gsub(/[^A-Za-z0-9-]/, '').downcase()
 end
