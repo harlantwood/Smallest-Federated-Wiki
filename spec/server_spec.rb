@@ -16,8 +16,8 @@ shared_examples_for "Welcome as HTML" do
     @body.should match(/<section class='main'>/)
   end
 
-  it "has a div with class 'page' and id 'welcome-visitors'" do
-    @body.should match(/<div class='page' .*?id='welcome-visitors'>/)
+  it "has a div with class 'page' and a non-empty id" do
+    @body.should match(/<div class='page' .*?id='[a-z\-]+'>/)
   end
 
   it "has the latest commit in the head" do
