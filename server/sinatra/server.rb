@@ -42,6 +42,7 @@ class Controller < Sinatra::Base
 
   def farm_page(site=request.host)
     page = Page.new
+    page.site = site
     page.directory = File.join data_dir(site), "pages"
     page.default_directory = File.join APP_ROOT, "default-data", "pages"
     page.plugins_directory = File.join APP_ROOT, "client", "plugins"
