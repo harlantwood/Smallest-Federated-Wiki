@@ -413,10 +413,16 @@ require.define("/lib/legacy.coffee", function (require, module, exports, __dirna
     resolveLinks = wiki.resolveLinks = function(string) {
       var renderInternalLink;
       renderInternalLink = function(match, name) {
-        var slug;
-        slug = util.asSlug(name);
+        var link_label, page_title, parts, slug;
+        parts = name.split('|');
+        if (parts.length === 2) {
+          page_title = parts[0], link_label = parts[1];
+        } else {
+          page_title = link_label = name;
+        }
+        slug = util.asSlug(page_title);
         wiki.log('resolve', slug, 'context', wiki.resolutionContext.join(' => '));
-        return "<a class=\"internal\" href=\"/" + slug + ".html\" data-page-name=\"" + slug + "\" title=\"" + (wiki.resolutionContext.join(' => ')) + "\">" + name + "</a>";
+        return "<a class=\"internal\" href=\"/" + slug + ".html\" data-page-name=\"" + slug + "\" title=\"" + (wiki.resolutionContext.join(' => ')) + "\">" + link_label + "</a>";
       };
       return string.replace(/\[\[([^\]]+)\]\]/gi, renderInternalLink).replace(/\[(http.*?) (.*?)\]/gi, "<a class=\"external\" target=\"_blank\" href=\"$1\">$2</a>");
     };

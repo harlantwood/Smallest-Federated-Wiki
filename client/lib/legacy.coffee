@@ -58,10 +58,17 @@ $ ->
 
   resolveLinks = wiki.resolveLinks = (string) ->
     renderInternalLink = (match, name) ->
+      # handle links with labels, eg [[API|Geek Stuff]]
+      parts = name.split('|')
+      if parts.length == 2
+        [page_title, link_label] = parts
+      else
+        page_title = link_label = name
+
       # spaces become 'slugs', non-alpha-num get removed
-      slug = util.asSlug name
+      slug = util.asSlug page_title
       wiki.log 'resolve', slug, 'context', wiki.resolutionContext.join(' => ')
-      "<a class=\"internal\" href=\"/#{slug}.html\" data-page-name=\"#{slug}\" title=\"#{wiki.resolutionContext.join(' => ')}\">#{name}</a>"
+      "<a class=\"internal\" href=\"/#{slug}.html\" data-page-name=\"#{slug}\" title=\"#{wiki.resolutionContext.join(' => ')}\">#{link_label}</a>"
     string
       .replace(/\[\[([^\]]+)\]\]/gi, renderInternalLink)
       .replace(/\[(http.*?) (.*?)\]/gi, "<a class=\"external\" target=\"_blank\" href=\"$1\">$2</a>")
