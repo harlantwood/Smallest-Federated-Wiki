@@ -10,8 +10,11 @@ module ServerHelpers
                   |name|
                   name.gsub!(/^\[\[(.*)\]\]/, '\1')
                   parts = name.split('|')
-                  link_label = parts[-1]
-                  page_title = parts[-2] || parts[-1]
+                  if parts.size == 2
+                    page_title, link_label = *parts
+                  else
+                    page_title = link_label = name
+                  end
                   slug = page_title.gsub(/\s/, '-')
                   slug = slug.gsub(/[^A-Za-z0-9-]/, '').downcase
                   '<a class="internal" href="/'+slug+'.html" data-page-name="'+slug+'">'+link_label+'</a>'

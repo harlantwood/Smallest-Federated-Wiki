@@ -39,8 +39,8 @@ describe 'Server helpers' do
         helpers.resolve_links('[[My Page|Click Here]]').should == '<a class="internal" href="/my-page.html" data-page-name="my-page">Click Here</a>'
       end
 
-      it "should convert links with more than 2 parts using the last segments" do
-        helpers.resolve_links('[[My Page|Is Great|Click Here]]').should == '<a class="internal" href="/is-great.html" data-page-name="is-great">Click Here</a>'
+      it "should treat a links with *2 or more pipe* characters as a normal wiki link (*not* a wiki link with a friendly label)" do
+        helpers.resolve_links('[[My Page|Is Great|Click Here]]').should == '<a class="internal" href="/my-pageis-greatclick-here.html" data-page-name="my-pageis-greatclick-here">My Page|Is Great|Click Here</a>'
       end
     end
   end
