@@ -339,7 +339,7 @@ class Controller < Sinatra::Base
       page['story'][page['story'].index{ |item| item['id'] == action['id'] }] = action['item']
     when 'create', 'fork'
       page['story'] ||= []
-    when 'merge'
+    when 'update'
       page.merge! action['item'].clone
     else
       puts "unfamiliar action: #{action.inspect}"
