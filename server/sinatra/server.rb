@@ -222,7 +222,7 @@ class Controller < Sinatra::Base
       bins[key].each do |page|
         next if page['story'].empty?
         site = "#{request.host}#{request.port==80 ? '' : ':'+request.port.to_s}"
-        story << {'type' => 'federatedWiki', 'site' => site, 'slug' => page['name'], 'title' => page['title'], 'text' => "", 'id' => RandomId.generate}
+        story << {'type' => 'paragraph', 'text' => %[<a href="#{page['name']}">#{page['title']}], 'id' => RandomId.generate}
       end
     end
     page = {'title' => 'Recent Changes', 'story' => story}
