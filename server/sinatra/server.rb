@@ -232,7 +232,7 @@ class Controller < Sinatra::Base
   get '/viz/collections.json' do
     cross_origin
     content_type 'application/json'
-    max_pages = 777
+    max_pages = 400
     collections = {"name" => "", "children" => []}
     farm_dir = File.join self.class.data_root, "farm"
     Store.page_metadata(farm_dir, max_pages).each do |page|
