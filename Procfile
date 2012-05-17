@@ -1,1 +1,1 @@
-web: bundle exec thin start -R server/sinatra/config.ru -p $PORT
+web: bundle exec thin start -R server/sinatra/config.ru -p $PORT -e $RACK_ENV
