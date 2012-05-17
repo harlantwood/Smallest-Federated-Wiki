@@ -24,7 +24,7 @@ class FileStore < Store
 
     ### COLLECTIONS
 
-    def page_metadata(farm_dir)
+    def page_metadata(farm_dir, max_pages)
       Dir.chdir(farm_dir) do
         Dir.glob("*").collect do |site|
           Dir.chdir("#{site}/pages") do
@@ -37,7 +37,7 @@ class FileStore < Store
             end
           end
         end
-      end.flatten
+      end.flatten[0..max_pages]
     end
 
     def annotated_pages(pages_dir)
