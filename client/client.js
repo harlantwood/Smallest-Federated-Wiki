@@ -1350,7 +1350,7 @@ require.define("/lib/refresh.coffee", function (require, module, exports, __dirn
           return wiki.addToJournal(journalElement, action);
         });
         journalElement.append("<div class=\"control-buttons\">\n  <a href=\"#\" class=\"button fork-page\" title=\"fork this page\">" + wiki.symbols['fork'] + "</a>\n  <a href=\"#\" class=\"button add-factory\" title=\"add paragraph\">" + wiki.symbols['add'] + "</a>\n</div>");
-        footerElement.append("<span class='license'>Unless other licences are present, all content is " + "<a href='http://creativecommons.org/licenses/by-sa/3.0/' id='license'>CC BY-SA 3.0</a></span> . ").append("<a class=\"show-page-source\" href=\"/" + slug + ".json?random=" + (util.randomBytes(4)) + "\" title=\"source\">JSON</a>");
+        footerElement.append("<span class='license'>Except where otherwise noted, all content is " + "<a href='http://creativecommons.org/licenses/by-sa/3.0/' id='license'>CC BY-SA 3.0</a></span> . ").append("<a href='recent-changes'>Recent Changes</a> . ").append("<a class=\"show-page-source\" href=\"/" + slug + ".json?random=" + (util.randomBytes(4)) + "\" title=\"source\">JSON</a>");
         state.setUrl();
       }
       initDragging(pageElement);

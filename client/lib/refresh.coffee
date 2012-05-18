@@ -117,9 +117,10 @@ module.exports = refresh = wiki.refresh = ->
         </div>
                             """
       footerElement
-        .append("<span class='license'>Unless other licences are present, all content is " +
+        .append("<span class='license'>Except where otherwise noted, all content is " +
                   "<a href='http://creativecommons.org/licenses/by-sa/3.0/' id='license'>CC BY-SA 3.0</a></span> . ")
-        .append("<a class=\"show-page-source\" href=\"/#{slug}.json?random=#{util.randomBytes(4)}\" title=\"source\">JSON</a>")
+        .append("<a class=\"show-page-source\" href=\"/#{slug}.json?random=#{util.randomBytes(4)}\" title=\"source\">JSON</a> . ")
+        .append("<a href='recent-changes'>Recent Changes</a>")
 
       state.setUrl()
 
