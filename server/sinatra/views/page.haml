@@ -22,6 +22,8 @@
 			%span{:class => ['action', item['type']], "data-item-id" => item['id'] }
 				= item['type'][0..0]
 	.footer
-		%a{:id => "license", :href => "http://creativecommons.org/licenses/by-sa/3.0/"} CC BY-SA 3.0
+		%span.license
+			Unless other licences are present, all content is
+			%a{:id => "license", :href => "http://creativecommons.org/licenses/by-sa/3.0/"} CC BY-SA 3.0
 		='.'
 		%a{:class => "show-page-source", :href => "/#{page_name}.json"} JSON

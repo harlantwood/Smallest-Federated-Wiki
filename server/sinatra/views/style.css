@@ -88,6 +88,7 @@ footer {
 .data p,
 .chart p,
 .footer a,
+.footer .license,
 .image p {
   text-align: center;
   margin-bottom: 0;
