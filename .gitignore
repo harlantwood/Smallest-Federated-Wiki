@@ -2,11 +2,13 @@
 .bundle/
 .DS_Store
 .env
+.foreman
 .idea/
 .sass-cache
 .rvmrc
 /data
 /spec/data
 /client/js
+/client/lib/*.js
 /client/node_modules
 /server/express/node_modules
