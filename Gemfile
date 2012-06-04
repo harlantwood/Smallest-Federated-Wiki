@@ -11,14 +11,15 @@ gem "png"
 gem "rest-client"
 gem "ruby-openid"
 gem "couchrest"
-gem 'awesome_print'
 gem "memcache-client", :require => 'memcache'
+gem "awesome_print"
+gem "rake"  # THOR INSTEAD
 
 group :development do
   gem 'ruby-debug', :require => 'ruby-debug', :platform => :mri_18
   gem 'ruby-debug19', :require => 'ruby-debug19', :platform => :mri_19
   gem "heroku"
-  gem 'rerun'
+  gem 'shotgun'
   gem 'foreman'
 end
 
