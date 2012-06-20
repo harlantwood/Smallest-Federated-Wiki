@@ -2,7 +2,7 @@ require 'time'  # for Time#iso8601
 require "rest-client"
 require "couchrest"
 
-require File.expand_path("store.rb", File.dirname(__FILE__))
+require File.expand_path("store", File.dirname(__FILE__))
 
 class CouchStore < Store
   class << self
@@ -105,26 +105,25 @@ class CouchStore < Store
             if (doc.type == 'Page' && doc.directory == '#{view_name}')
               emit(doc._id, doc)
           }
-        "
+        ".gsub!(/\s+/, ' ').strip!
       }
       design.save
     end
 
     def get_or_create_design(design_name)
-      # TODO: if we are in dev mode, always update views -- otherwise view changes never get pushed!
+      # TODO: if we are in dev mode, always update views -- otherwise we have to remember to push view changes manually
       begin
         db.get "_design/#{design_name}"
       rescue RestClient::ResourceNotFound
-        begin
-          @db.save_doc "_id" => "_design/#{design_name}", :views => {}
-        rescue RestClient::Conflict
-          # don't explode in the case that another thread has created this design document at the same time
-        end
+        @db.save_doc "_id" => "_design/#{design_name}", :views => {}
+      ensure
         db.get "_design/#{design_name}"
       end
     end
 
-    ### UTILITY
+
+
+      ### UTILITY
 
     def farm?(_)
       !!ENV['FARM_MODE']

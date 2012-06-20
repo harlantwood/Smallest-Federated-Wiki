@@ -37,8 +37,8 @@ Launching the Server
 
 We're now using Ruby 1.9.2 which we manage with rvm. Launch the server with the following bundler commands:
 
-	rvm 1.9.2
-	bundle exec rerun "foreman start -p 1111"
+    rvm 1.9.2
+    bundle exec foreman run "shotgun -p 1111 server/sinatra/config.ru"
 
 Rerun will restart the server any time relevant files are changed.
 Foreman will load any environment variables you put in the `.env` file in the application root.
